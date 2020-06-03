@@ -1,6 +1,6 @@
 {
-  "name": "node-norman",
-  "version": "2.0.41",
+  "name": "rollman",
+  "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zenwarr/norman.git"
+    "url": "git+https://github.com/zenwarr/rollman.git"
   },
   "engines": {
     "npm": ">5.7.1"
@@ -19,9 +19,9 @@
   "author": "zenwarr",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/zenwarr/norman/issues"
+    "url": "https://github.com/zenwarr/rollman/issues"
   },
-  "homepage": "https://github.com/zenwarr/norman#readme",
+  "homepage": "https://github.com/zenwarr/rollman#readme",
   "devDependencies": {
     "@types/argparse": "~1.0.38",
     "@types/chalk": "^2.2.0",
@@ -52,6 +52,6 @@
     "verdaccio": "~4.5.1"
   },
   "bin": {
-    "norman": "./norman.js"
+    "rollman": "./rollman.js"
   }
 }

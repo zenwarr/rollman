@@ -50,7 +50,7 @@ export class ArgumentsManager {
       addHelp: true
     });
     argparser.addArgument([ "--config", "-c" ], {
-      help: "Path to config file or a directory containing config file named .norman.json"
+      help: "Path to config file or a directory containing config file named rollman.json"
     });
     argparser.addArgument("--ignore-missing-included-modules", {
       help: "Do not raise an error if a path specified in 'includeModules' is invalid",

@@ -6,7 +6,7 @@ import { ServiceLocator } from "./locator";
 import { getArgs } from "./arguments";
 
 
-const CONFIG_FILE_NAME = "norman.json";
+const CONFIG_FILE_NAME = "rollman.json";
 
 
 interface RawConfig {

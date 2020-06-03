@@ -20,7 +20,7 @@ export interface ModuleState {
 }
 
 
-const STATE_DIR = path.join(os.homedir(), ".norman-state");
+const STATE_DIR = path.join(os.homedir(), ".rollman-state");
 
 
 export class ModuleStateManager {

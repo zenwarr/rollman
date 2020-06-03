@@ -82,7 +82,7 @@ export class Config {
   }
 
   public static getConfigDir(): string {
-    return path.join(os.homedir(), ".config", "norman");
+    return path.join(os.homedir(), ".config", "rollman");
   }
 }
 

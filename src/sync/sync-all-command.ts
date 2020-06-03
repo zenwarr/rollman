@@ -78,11 +78,7 @@ export async function syncAllCommand() {
       return undefined;
     }
 
-    console.log("published versions: ", publishedVersions);
-
     let wanted = semver.maxSatisfying(publishedVersions, requirement.range);
-
-    console.log("wanted: ", wanted);
 
     if (!wanted) {
       // should we give some warning
@@ -105,8 +101,6 @@ export async function syncAllCommand() {
         version: wanted
       };
     }
-
-    console.log(`wanted: ${wanted}, installed: ${installedDepVersion}`);
 
     return undefined;
   }
