@@ -14,7 +14,6 @@ import { Config, getConfig } from "./config/config";
 import { startServerCommand } from "./commands/server";
 import { shutdown } from "./shutdown";
 import { syncCommand } from "./sync/sync-command";
-import { syncAllCommand } from "./sync/sync-all-command";
 import { releaseCommand } from "./release/release-command";
 import { PackageReader } from "./package-reader";
 import { NpmInfoReader } from "./npm-info-reader";
@@ -40,9 +39,8 @@ async function asyncStart(): Promise<void> {
     "list-modules": listModulesCommand,
     "dependency-tree": dependencyTreeCommand,
     fetch: fetchCommand,
-    sync: syncCommand,
     clean: cleanCommand,
-    "sync-all": syncAllCommand,
+    sync: syncCommand,
     outdated: outdatedCommand,
     npm: npmCommand,
     publish: publishCommand,

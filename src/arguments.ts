@@ -11,8 +11,6 @@ export type Arguments = {
 } & ({
   subCommand: "sync";
 } | {
-  subCommand: "sync-all";
-} | {
   subCommand: "fetch";
   noInstall: boolean;
 } | {
@@ -71,9 +69,7 @@ export class ArgumentsManager {
       dest: "subCommand"
     });
 
-    subparsers.addParser("sync", { help: "Synchronizes a local module at current working directory" });
-
-    subparsers.addParser("sync-all", { help: "Synchronize all local modules" });
+    subparsers.addParser("sync", { help: "Synchronize all local modules" });
 
     let fetchParser = subparsers.addParser("fetch", { help: "Fetches and initializes all local modules" });
     fetchParser.addArgument("--no-install", {
