@@ -26,8 +26,15 @@ export class PackageReader {
       throw new Error(`Expected contents of ${ filePath } to be object`);
     }
 
-    this._metadataCache.set(filePath, metadata);
+    if (metadata != null) {
+      this._metadataCache.set(filePath, metadata);
+    }
+
     return metadata;
+  }
+
+  public invalidate(dirPath: string) {
+    this._metadataCache.delete(dirPath);
   }
 
   public static init() {

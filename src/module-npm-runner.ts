@@ -2,6 +2,7 @@ import * as utils from "./process";
 import { getNpmRc } from "./npmrc";
 import { getRegistry } from "./registry";
 import { LocalModule } from "./local-module";
+import { getPackageReader } from "./package-reader";
 
 
 export namespace NpmRunner {
@@ -32,11 +33,15 @@ export namespace NpmRunner {
       args = [ args ];
     }
 
-    return utils.runCommand(utils.getNpmExecutable(), args, {
+    let result = await utils.runCommand(utils.getNpmExecutable(), args, {
       cwd: module.path,
       env: buildNpmEnv(),
       ...options
     });
+
+    getPackageReader().invalidate(module.path);
+
+    return result;
   }
 
 

@@ -3,7 +3,8 @@ import { NpmRunner } from "../module-npm-runner";
 import { Lockfile } from "../lockfile";
 import { getDirectLocalDeps, walkModuleDependants } from "../deps/dry-dependency-tree";
 import { getRegistry } from "../registry";
-import { DefaultDeserializer } from "v8";
+import * as path from "path";
+import * as fs from "fs-extra";
 
 
 export interface ModSpecifier {
@@ -15,6 +16,11 @@ export interface ModSpecifier {
 export async function updateDependencies(parent: LocalModule, children: ModSpecifier[]) {
   if (!children.length) {
     return;
+  }
+
+  let modulesDir = path.join(parent.path, "node_modules");
+  if (!fs.existsSync(modulesDir)) {
+    await NpmRunner.run(parent, "install");
   }
 
   let parts = children.map(child => `${ child.mod.checkedName.name }@${ child.version }`);
