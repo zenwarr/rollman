@@ -1,4 +1,4 @@
-import * as utils from "./utils";
+import * as utils from "./process";
 import { getNpmRc } from "./npmrc";
 import { getRegistry } from "./registry";
 import { LocalModule } from "./local-module";

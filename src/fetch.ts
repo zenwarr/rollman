@@ -1,6 +1,6 @@
 import { LocalModule } from "./local-module";
 import * as fs from "fs-extra";
-import * as utils from "./utils";
+import * as utils from "./process";
 
 
 export async function fetchLocalModule(mod: LocalModule) {

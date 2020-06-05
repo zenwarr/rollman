@@ -11,7 +11,7 @@ export async function listModulesCommand() {
     data.push({
       name: module.name ? module.name.name : "<no name>",
       path: module.path,
-      registry: getRegistryForPackage(module.checkedName),
+      registry: module.name ? getRegistryForPackage(module.name) : "<not fetched>",
       useNpm: module.useNpm
     });
   });

@@ -2,7 +2,7 @@ import * as path from "path";
 import { LocalModule } from "./local-module";
 import { BuildDependenciesSubset } from "./subsets/build-dependencies-subset";
 import { getStateManager } from "./module-state-manager";
-import * as utils from "./utils";
+import * as utils from "./process";
 import * as fs from "fs-extra";
 import { getPackageReader } from "./package-reader";
 

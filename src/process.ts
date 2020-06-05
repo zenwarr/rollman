@@ -1,6 +1,5 @@
 import * as child_process from "child_process";
 import * as chalk from "chalk";
-import { getPackageReader } from "./package-reader";
 import * as ora from "ora";
 
 
@@ -134,21 +133,6 @@ function logProcessExecuteError(exitCode: number, command: string, args: null | 
       console.log(chalk.red("Please make sure executable exists"));
     }
   }
-}
-
-
-export function getDirectDeps(packagePath: string, includeDev: boolean = true): string[] {
-  let pkg = getPackageReader().readPackageMetadata(packagePath);
-  if (!pkg) {
-    return [];
-  }
-
-  let deps = Object.keys(pkg.dependencies || {});
-  if (includeDev) {
-    deps = deps.concat(Object.keys(pkg.devDependencies || {}));
-  }
-
-  return deps;
 }
 
 

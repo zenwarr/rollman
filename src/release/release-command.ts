@@ -6,7 +6,7 @@ import * as chalk from "chalk";
 import { shutdown } from "../shutdown";
 import { getCurrentPackageVersion, setPackageVersion } from "../sync/npm-view";
 import * as semver from "semver";
-import { runCommand } from "../utils";
+import { runCommand } from "../process";
 
 
 function getNewReleaseVersion(mod: LocalModule, releaseType: ReleaseType) {

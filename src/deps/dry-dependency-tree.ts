@@ -1,6 +1,6 @@
 import { LocalModule } from "../local-module";
-import * as utils from "../utils";
 import { getProject } from "../project";
+import { getPackageReader } from "../package-reader";
 
 
 export enum WalkerAction {
@@ -12,6 +12,21 @@ export enum WalkerAction {
 export type LocalModuleWalker = (module: LocalModule) => Promise<WalkerAction | void>;
 
 
+export function getDirectDeps(packagePath: string, includeDev: boolean = true): string[] {
+  let pkg = getPackageReader().readPackageMetadata(packagePath);
+  if (!pkg) {
+    return [];
+  }
+
+  let deps = Object.keys(pkg.dependencies || {});
+  if (includeDev) {
+    deps = deps.concat(Object.keys(pkg.devDependencies || {}));
+  }
+
+  return deps;
+}
+
+
 /**
  * Returns list of all local modules listed in `dependencies` and `devDependencies` of the given module.
  * @param module
@@ -21,10 +36,8 @@ export function getDirectLocalDeps(module: LocalModule): LocalModule[] {
     return [];
   }
 
-  const config = getProject();
-  return utils.getDirectDeps(module.path)
-  .map(moduleName => config.getModuleInfo(moduleName))
-  .filter(dep => dep != null) as LocalModule[];
+  const project = getProject();
+  return getDirectDeps(module.path).map(moduleName => project.getModuleInfo(moduleName)).filter(dep => dep != null) as LocalModule[];
 }
 
 
@@ -52,11 +65,11 @@ export async function walkModuleDependants(mod: LocalModule, walker: (dep: Local
 }
 
 
-export async function walkDryLocalTreeFromMultipleRoots(modules: LocalModule[], walker: LocalModuleWalker): Promise<void> {
-  const walked = new Set<string>();
+export async function walkAllLocalModules(walker: LocalModuleWalker): Promise<void> {
+  const walked = new Set<LocalModule>();
 
-  const walkModule = async(module: LocalModule, deps: LocalModule[], parents: string[]): Promise<WalkerAction> => {
-    if (!module.name || walked.has(module.name.name)) {
+  const walkModule = async (mod: LocalModule, deps: LocalModule[], parents: LocalModule[]): Promise<WalkerAction> => {
+    if (walked.has(mod)) {
       return WalkerAction.Continue;
     }
 
@@ -65,30 +78,25 @@ export async function walkDryLocalTreeFromMultipleRoots(modules: LocalModule[], 
         continue;
       }
 
-      if (parents.indexOf(dep.name.name) >= 0) {
+      if (parents.indexOf(dep) >= 0) {
         throw new Error(`Recursive dependency: ${ dep.name }, required by ${ parents.join(" -> ") }`);
       }
 
-      const action = await walkModule(dep, getDirectLocalDeps(dep), [ ...parents, module.name.name ]);
+      const action = await walkModule(dep, getDirectLocalDeps(dep), [ ...parents, mod ]);
       if (action === WalkerAction.Stop) {
         return WalkerAction.Stop;
       }
     }
 
-    walked.add(module.name.name);
+    walked.add(mod);
 
-    return await walker(module) || WalkerAction.Continue;
+    return await walker(mod) || WalkerAction.Continue;
   };
 
-  for (let module of modules) {
+  for (let module of getProject().modules) {
     const action = await walkModule(module, getDirectLocalDeps(module), []);
     if (action === WalkerAction.Stop) {
       return;
     }
   }
-}
-
-
-export async function walkAllLocalModules(walker: LocalModuleWalker): Promise<void> {
-  return walkDryLocalTreeFromMultipleRoots(getProject().modules, walker);
 }
