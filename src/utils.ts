@@ -1,13 +1,10 @@
 import * as child_process from "child_process";
 import * as chalk from "chalk";
-import * as fs from "fs-extra";
-import * as path from "path";
 import { getPackageReader } from "./package-reader";
+import * as ora from "ora";
 
 
 type ExtraRunOptions = {
-  silent?: boolean;
-  collectOutput?: boolean;
   ignoreExitCode?: boolean;
 };
 
@@ -15,61 +12,114 @@ export type SpawnOptions = child_process.SpawnOptions & ExtraRunOptions;
 export type ExecOptions = child_process.ExecOptions & ExtraRunOptions;
 
 
-export async function runCommand(command: string, args: null, options?: ExecOptions): Promise<string>;
-export async function runCommand(command: string, args: string[], options?: SpawnOptions): Promise<string>;
-export async function runCommand(command: string, args: string[] | null, options?: SpawnOptions | ExecOptions): Promise<string> {
+function getCommandTitle(command: string, args: string[] | null, options?: SpawnOptions | ExecOptions): string {
+  let inClause = options && options.cwd ? `(in ${ options.cwd })` : "";
+  if (args == null) {
+    return `→ ${ command } ${ inClause }`;
+  } else {
+    return `→ ${ command } ${ args.join(" ") } ${ inClause }`;
+  }
+}
+
+
+function execOrSpawn(command: string, args: string[] | null, options?: ExecOptions | SpawnOptions) {
+  if (args == null) {
+    return child_process.exec(command, options as ExecOptions);
+  } else {
+    return child_process.spawn(command, args, options as SpawnOptions);
+  }
+}
+
+
+export async function getCommandOutput(command: string, args: string[] | null, options?: SpawnOptions | ExecOptions): Promise<string> {
   return new Promise<string>((resolve, reject) => {
-    let silent = options && options.silent === true;
+    let params = {
+      ...options,
+      stdio: "pipe",
+      stderr: "pipe"
+    } as const;
 
-    if (!silent) {
-      let inClause = options && options.cwd ? `(in ${options.cwd})` : "";
-      if (args == null) {
-        console.log(chalk.cyan(`→ ${command} ${inClause}`));
-      } else {
-        console.log(chalk.cyan(`→ ${command} ${args.join(" ")} ${inClause}`));
-      }
-    }
-
-    let defOptions = options && options.collectOutput === true ? {} : {
-      stdio: silent ? "ignore" : "inherit",
-      stderr: silent ? "ignore" : "inherit"
-    };
-
-    let params = Object.assign(defOptions, options || {});
-
-    let proc: child_process.ChildProcess;
-    if (args == null) {
-      proc = child_process.exec(command, params as ExecOptions);
-    } else {
-      proc = child_process.spawn(command, args, params as SpawnOptions);
-    }
+    let proc = execOrSpawn(command, args, params);
 
     let output = "";
-    if (options && options.collectOutput && proc.stdout) {
+    if (proc.stdout) {
       proc.stdout.on("data", data => {
         output += data;
       });
     }
 
     proc.on("close", code => {
-      if (!silent) {
-        console.log(chalk.cyan("→ DONE"));
-      }
       if (code === 0) {
         resolve(output);
       } else if (options && options.ignoreExitCode) {
         resolve(output);
       } else {
         logProcessExecuteError(code, command, args, options);
-
-        reject(new Error(`Process exited with code ${code}`));
+        reject(new Error(`Process exited with code ${ code }`));
       }
     });
 
     proc.on("error", error => {
-      if (!silent) {
-        console.log(chalk.red(`→ ERROR: ${error.message}`));
+      reject(error);
+    });
+  });
+}
+
+
+export async function runCommand(command: string, args: null, options?: ExecOptions): Promise<string>;
+export async function runCommand(command: string, args: string[], options?: SpawnOptions): Promise<string>;
+export async function runCommand(command: string, args: string[] | null, options?: SpawnOptions | ExecOptions): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    let commandTitle = getCommandTitle(command, args, options);
+
+    let commandSpinner = ora({
+      text: chalk.green(commandTitle),
+      spinner: "bouncingBar",
+      color: "green"
+    }).start();
+
+    let params = {
+      ...options,
+      stdio: "pipe",
+      stderr: "pipe"
+    } as const;
+    let proc = execOrSpawn(command, args, params);
+
+    let output = "";
+    let errorOutput = "";
+    if (proc.stdout) {
+      proc.stdout.on("data", data => {
+        output += data;
+      });
+    }
+    if (proc.stderr) {
+      proc.stderr.on("data", data => {
+        errorOutput += data;
+      });
+    }
+
+    proc.on("close", code => {
+      if (code === 0) {
+        commandSpinner.succeed();
+        resolve(output);
+      } else if (options && options.ignoreExitCode) {
+        commandSpinner.succeed();
+        resolve(output);
+      } else {
+        commandSpinner.fail();
+
+        console.log(output);
+        console.error(chalk.red(errorOutput));
+
+        logProcessExecuteError(code, command, args, options);
+
+        reject(new Error(`Process exited with code ${ code }`));
       }
+    });
+
+    proc.on("error", error => {
+      commandSpinner.fail();
+      console.log(chalk.red(`→ ERROR: ${ error.message }`));
       reject(error);
     });
   });
@@ -77,21 +127,9 @@ export async function runCommand(command: string, args: string[] | null, options
 
 
 function logProcessExecuteError(exitCode: number, command: string, args: null | string[], options?: SpawnOptions | ExecOptions) {
-  console.log(chalk.red("Failed to execute the following command:"));
-  if (args == null) {
-    console.log(chalk.redBright("  " + command));
-  } else {
-    const commandParams = args.join(" ");
-    console.log(chalk.redBright(`  ${command} ${commandParams}`));
-  }
-
-  if (options && options.cwd) {
-    console.log(chalk.redBright("  in directory:", options.cwd));
-  }
-
   if (exitCode === 127) {
     if (args == null) {
-      console.log(chalk.red(`Please make sure executable exists, or, in case or running npm script, make sure that script ${command} exists`));
+      console.log(chalk.red(`Please make sure executable exists, or, in case or running npm script, make sure that script ${ command } exists`));
     } else {
       console.log(chalk.red("Please make sure executable exists"));
     }
@@ -101,6 +139,10 @@ function logProcessExecuteError(exitCode: number, command: string, args: null | 
 
 export function getDirectDeps(packagePath: string, includeDev: boolean = true): string[] {
   let pkg = getPackageReader().readPackageMetadata(packagePath);
+  if (!pkg) {
+    return [];
+  }
+
   let deps = Object.keys(pkg.dependencies || {});
   if (includeDev) {
     deps = deps.concat(Object.keys(pkg.devDependencies || {}));

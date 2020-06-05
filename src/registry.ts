@@ -126,7 +126,7 @@ export class NpmRegistry {
         this.proc.stdout.on("data", (data: Buffer) => {
           let line = data.toString("utf-8");
           if (line.includes("http address")) {
-            console.log(`Local npm registry server listening on port ${ port }`);
+            console.log(chalk.gray(`Local npm registry server listening on port ${ port }`));
             resolve();
           }
         });

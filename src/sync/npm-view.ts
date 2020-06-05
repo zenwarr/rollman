@@ -31,9 +31,7 @@ export interface NpmViewInfo {
 
 
 async function getNpmViewResult(mod: LocalModule) {
-  const output = await NpmRunner.run(mod, [ "view", "--json" ], {
-    silent: true,
-    collectOutput: true,
+  const output = await NpmRunner.getOutput(mod, [ "view", "--json" ], {
     ignoreExitCode: true
   });
 

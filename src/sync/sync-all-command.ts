@@ -87,7 +87,6 @@ export async function syncAllCommand() {
 
     let installedDepVersion = await getInstalledVersion(parent, dep.checkedName.name);
     if (!installedDepVersion) {
-      console.log(`should update ${ dep.checkedName.name } in ${ parent.checkedName.name }: ${ installedDepVersion } -> ${ wanted }`);
       return {
         mod: dep,
         version: wanted
@@ -95,7 +94,6 @@ export async function syncAllCommand() {
     }
 
     if (semver.gt(wanted, installedDepVersion)) {
-      console.log(`should update ${ dep.checkedName.name } in ${ parent.checkedName.name }: ${ installedDepVersion } -> ${ wanted }`);
       return {
         mod: dep,
         version: wanted

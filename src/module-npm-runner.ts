@@ -38,4 +38,17 @@ export namespace NpmRunner {
       ...options
     });
   }
+
+
+  export async function getOutput(module: LocalModule, args: string | string[], options?: utils.SpawnOptions): Promise<string> {
+    if (typeof args === "string") {
+      args = [ args ];
+    }
+
+    return utils.getCommandOutput(utils.getNpmExecutable(), args, {
+      cwd: module.path,
+      env: buildNpmEnv(),
+      ...options
+    })
+  }
 }

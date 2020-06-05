@@ -3,10 +3,8 @@ import { NpmRunner } from "../module-npm-runner";
 
 
 export async function getOutdated(module: LocalModule): Promise<any> {
-  let result = await NpmRunner.run(module, [ "outdated", "--json" ], {
+  let result = await NpmRunner.getOutput(module, [ "outdated", "--json" ], {
     ignoreExitCode: true,
-    collectOutput: true,
-    silent: true
   });
 
   result = result ? result.trim() : result;
@@ -22,6 +20,7 @@ export async function getOutdated(module: LocalModule): Promise<any> {
 
     return resultObj;
   }
+  
   return {};
 }
 

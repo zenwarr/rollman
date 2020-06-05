@@ -21,9 +21,6 @@ export async function updateDependencies(parent: LocalModule, children: ModSpeci
 
   await NpmRunner.run(parent, [ "install", ...parts ]);
 
-  let address = getRegistry().address;
-  console.log("address: ", address);
-
   if (Lockfile.existsInModule(parent)) {
     let lockfile = Lockfile.forModule(parent);
     lockfile.updateResolveUrl(getRegistry().address);
