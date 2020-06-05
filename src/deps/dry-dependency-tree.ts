@@ -68,7 +68,7 @@ export async function walkModuleDependants(mod: LocalModule, walker: (dep: Local
 export async function walkAllLocalModules(walker: LocalModuleWalker): Promise<void> {
   const walked = new Set<LocalModule>();
 
-  const walkModule = async (mod: LocalModule, deps: LocalModule[], parents: LocalModule[]): Promise<WalkerAction> => {
+  const walkModule = async(mod: LocalModule, deps: LocalModule[], parents: LocalModule[]): Promise<WalkerAction> => {
     if (walked.has(mod)) {
       return WalkerAction.Continue;
     }

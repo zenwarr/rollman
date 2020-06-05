@@ -49,6 +49,6 @@ export namespace NpmRunner {
       cwd: module.path,
       env: buildNpmEnv(),
       ...options
-    })
+    });
   }
 }
