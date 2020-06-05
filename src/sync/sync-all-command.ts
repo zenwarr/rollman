@@ -136,12 +136,10 @@ export async function syncAllCommand() {
 
     await updateDependencies(mod, depsToUpdate);
 
-    let packageInfo = await getNpmInfoReader().getNpmInfo(mod);
-
     let publishedVersion = await publishModuleIfChanged(mod);
     publishInfo.set(mod, {
       publishedVersion,
-      info: packageInfo
+      info: await getNpmInfoReader().getNpmInfo(mod)
     });
 
     return WalkerAction.Continue;

@@ -251,8 +251,8 @@ export class Project {
 
   public static init() {
     const args = getArgs();
-    const config = Project.findAndLoadProject(args.config || process.cwd(), args.ignoreMissingIncludedModules);
-    ServiceLocator.instance.initialize("project", config);
+    const project = Project.findAndLoadProject(args.config || process.cwd(), args.ignoreMissingIncludedModules);
+    ServiceLocator.instance.initialize("project", project);
   }
 }
 

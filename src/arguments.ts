@@ -7,6 +7,7 @@ import { ReleaseType } from "./release/release-types";
 export type Arguments = {
   config: string | null;
   ignoreMissingIncludedModules: boolean;
+  verbose: boolean;
 } & ({
   subCommand: "sync";
 } | {
@@ -57,6 +58,12 @@ export class ArgumentsManager {
       action: "storeTrue",
       defaultValue: false,
       dest: "ignoreMissingIncludedModules"
+    });
+    argparser.addArgument("--verbose", {
+      help: "Verbose child process output",
+      action: "storeTrue",
+      defaultValue: false,
+      dest: "verbose"
     });
 
     let subparsers = argparser.addSubparsers({

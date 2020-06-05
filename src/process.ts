@@ -1,6 +1,7 @@
 import * as child_process from "child_process";
 import * as chalk from "chalk";
 import * as ora from "ora";
+import { getConfig } from "./config/config";
 
 
 type ExtraRunOptions = {
@@ -69,18 +70,24 @@ export async function runCommand(command: string, args: null, options?: ExecOpti
 export async function runCommand(command: string, args: string[], options?: SpawnOptions): Promise<string>;
 export async function runCommand(command: string, args: string[] | null, options?: SpawnOptions | ExecOptions): Promise<string> {
   return new Promise<string>((resolve, reject) => {
+    let verbose = getConfig().processVerbose;
     let commandTitle = getCommandTitle(command, args, options);
 
-    let commandSpinner = ora({
-      text: chalk.green(commandTitle),
-      spinner: "bouncingBar",
-      color: "green"
-    }).start();
+    let commandSpinner: ora.Ora | undefined;
+    if (verbose) {
+      console.log(chalk.green(commandTitle));
+    } else {
+      commandSpinner = ora({
+        text: chalk.green(commandTitle),
+        spinner: "bouncingBar",
+        color: "green"
+      }).start();
+    }
 
     let params = {
       ...options,
-      stdio: "pipe",
-      stderr: "pipe"
+      stdio: verbose ? "inherit" : "pipe",
+      stderr: verbose ? "inherit" : "pipe"
     } as const;
     let proc = execOrSpawn(command, args, params);
 
@@ -99,16 +106,28 @@ export async function runCommand(command: string, args: string[] | null, options
 
     proc.on("close", code => {
       if (code === 0) {
-        commandSpinner.succeed();
+        if (verbose) {
+          console.log(chalk.green("-> DONE"));
+        }
+        commandSpinner?.succeed();
+
         resolve(output);
       } else if (options && options.ignoreExitCode) {
-        commandSpinner.succeed();
+        if (verbose) {
+          console.log(chalk.green(`-> DONE (exit code ${ code })`));
+        }
+
+        commandSpinner?.succeed();
         resolve(output);
       } else {
-        commandSpinner.fail();
+        commandSpinner?.fail();
 
-        console.log(output);
-        console.error(chalk.red(errorOutput));
+        if (verbose) {
+          console.log(chalk.red(`-> ERROR: exit code ${ code }`));
+        } else {
+          console.log(output);
+          console.error(chalk.red(errorOutput));
+        }
 
         logProcessExecuteError(code, command, args, options);
 
@@ -117,7 +136,7 @@ export async function runCommand(command: string, args: string[] | null, options
     });
 
     proc.on("error", error => {
-      commandSpinner.fail();
+      commandSpinner?.fail();
       console.log(chalk.red(`→ ERROR: ${ error.message }`));
       reject(error);
     });

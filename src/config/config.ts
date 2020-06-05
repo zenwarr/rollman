@@ -57,6 +57,7 @@ export class Config {
   public readonly registryServerType: RegistryServerType;
   public readonly managedRegistryPort: number | undefined;
   public readonly remoteRegistryUrl: string | undefined;
+  public processVerbose = false;
 
   private static getConfigPath(): string {
     return path.join(this.getConfigDir(), "config.json");

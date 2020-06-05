@@ -76,7 +76,6 @@ async function publishModule(mod: LocalModule): Promise<string> {
       shutdown(-1);
     }
 
-    console.log("Setting package version...");
     await setPackageVersion(mod, newVersion);
     publishedVersion = newVersion;
   } else if (!info.isOnRegistry) {

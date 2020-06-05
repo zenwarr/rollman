@@ -10,7 +10,7 @@ import { ModuleStateManager } from "./module-state-manager";
 import { npmCommand } from "./commands/npm";
 import { outdatedCommand } from "./upgrade/outdated-command";
 import { publishCommand } from "./commands/publish";
-import { Config } from "./config/config";
+import { Config, getConfig } from "./config/config";
 import { startServerCommand } from "./commands/server";
 import { shutdown } from "./shutdown";
 import { syncCommand } from "./sync/sync-command";
@@ -28,6 +28,8 @@ async function asyncStart(): Promise<void> {
   NpmInfoReader.init();
 
   let args = getArgs();
+
+  getConfig().processVerbose = args.verbose;
 
   if (args.subCommand !== "server") {
     Project.init();

@@ -2,6 +2,7 @@ import { getArgs } from "../arguments";
 import { getProject } from "../project";
 import { NpmRunner } from "../module-npm-runner";
 import { NpmRegistry } from "../registry";
+import { getConfig } from "../config/config";
 
 
 export async function npmCommand() {
@@ -10,11 +11,13 @@ export async function npmCommand() {
     return;
   }
 
-  let config = getProject();
+  getConfig().processVerbose = true;
+
+  let project = getProject();
 
   let dir = process.cwd();
 
-  let mod = config.modules.find(module => module.path === dir);
+  let mod = project.modules.find(module => module.path === dir);
   if (!mod) {
     throw new Error(`Failed to find local module at current working directory ("${ dir }")`);
   }
