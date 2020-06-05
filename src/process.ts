@@ -107,14 +107,14 @@ export async function runCommand(command: string, args: string[] | null, options
     proc.on("close", code => {
       if (code === 0) {
         if (verbose) {
-          console.log(chalk.green("-> DONE"));
+          console.log(chalk.green("→ DONE"));
         }
         commandSpinner?.succeed();
 
         resolve(output);
       } else if (options && options.ignoreExitCode) {
         if (verbose) {
-          console.log(chalk.green(`-> DONE (exit code ${ code })`));
+          console.log(chalk.green(`→ DONE (exit code ${ code })`));
         }
 
         commandSpinner?.succeed();
@@ -123,7 +123,7 @@ export async function runCommand(command: string, args: string[] | null, options
         commandSpinner?.fail();
 
         if (verbose) {
-          console.log(chalk.red(`-> ERROR: exit code ${ code }`));
+          console.log(chalk.red(`→ ERROR: exit code ${ code }`));
         } else {
           console.log(output);
           console.error(chalk.red(errorOutput));
