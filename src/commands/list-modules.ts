@@ -1,4 +1,3 @@
-import { getProject } from "../project";
 import * as columnify from "columnify";
 import { getRegistryForPackage } from "../registry-paths";
 import { walkAllLocalModules } from "../deps/dry-dependency-tree";

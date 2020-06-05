@@ -2,13 +2,12 @@ import { LocalModule } from "../local-module";
 import { getStateManager } from "../module-state-manager";
 import { PublishDependenciesSubset } from "../subsets/publish-dependencies-subset";
 import { buildModuleIfChanged } from "../build";
-import { getNpmViewInfo, NpmViewInfo, setPackageVersion } from "./npm-view";
+import { NpmViewInfo, setPackageVersion } from "./npm-view";
 import * as prompts from "prompts";
 import { shutdown } from "../shutdown";
 import { NpmRunner } from "../module-npm-runner";
 import * as path from "path";
 import * as fs from "fs-extra";
-import { getPackageReader } from "../package-reader";
 import { getNpmInfoReader } from "../npm-info-reader";
 
 

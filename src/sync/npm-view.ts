@@ -1,7 +1,5 @@
 import { LocalModule } from "../local-module";
 import { NpmRunner } from "../module-npm-runner";
-import * as fs from "fs-extra";
-import * as path from "path";
 import * as semver from "semver";
 import * as chalk from "chalk";
 import { getPackageReader } from "../package-reader";

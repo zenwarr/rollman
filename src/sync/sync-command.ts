@@ -5,7 +5,6 @@ import { publishModuleIfChanged } from "./publish";
 import { updateModuleInDependants } from "./update-deps";
 import { installModuleDepsIfNotInitialized } from "../deps/deps";
 import { getCwdModule } from "../cwd-module";
-import { getNpmViewInfo } from "./npm-view";
 
 
 export async function syncCommand() {
