@@ -14,7 +14,8 @@
     "url": "git+https://github.com/zenwarr/rollman.git"
   },
   "engines": {
-    "npm": ">5.7.1"
+    "node": ">10.0.0",
+    "npm": ">6.0.0"
   },
   "author": "zenwarr",
   "license": "MIT",
