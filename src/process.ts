@@ -158,3 +158,21 @@ function logProcessExecuteError(exitCode: number, command: string, args: null | 
 export function getNpmExecutable(): string {
   return process.platform === "win32" ? "npm.cmd" : "npm";
 }
+
+
+export async function operationSpinner<T>(text: string, callback: () => Promise<T>): Promise<T> {
+  let commandSpinner = ora({
+    text: chalk.green(text),
+    spinner: "bouncingBar",
+    color: "green"
+  }).start();
+
+  try {
+    let result = await callback();
+    commandSpinner.succeed();
+    return result;
+  } catch (error) {
+    commandSpinner.fail();
+    throw error;
+  }
+}

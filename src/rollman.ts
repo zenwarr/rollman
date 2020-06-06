@@ -29,6 +29,7 @@ async function asyncStart(): Promise<void> {
   let args = getArgs();
 
   getConfig().processVerbose = args.verbose;
+  getConfig().registryVerbose = args.registryVerbose;
 
   if (args.subCommand !== "server") {
     Project.init();

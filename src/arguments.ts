@@ -8,6 +8,7 @@ export type Arguments = {
   config: string | null;
   ignoreMissingIncludedModules: boolean;
   verbose: boolean;
+  registryVerbose: boolean;
 } & ({
   subCommand: "sync";
 } | {
@@ -62,6 +63,12 @@ export class ArgumentsManager {
       action: "storeTrue",
       defaultValue: false,
       dest: "verbose"
+    });
+    argparser.addArgument("--registry-verbose", {
+      help: "Redirect managed npm server output to current process console",
+      action: "storeTrue",
+      defaultValue: false,
+      dest: "registryVerbose"
     });
 
     let subparsers = argparser.addSubparsers({
