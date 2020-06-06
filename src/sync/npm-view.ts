@@ -30,7 +30,7 @@ export interface NpmViewInfo {
 
 
 async function getNpmViewResult(mod: LocalModule) {
-  let commandTitle = `Inspecting published versions of "${ mod.checkedName.name }"`
+  let commandTitle = `Inspecting published versions of "${ mod.checkedName.name }"`;
   const output = await operationSpinner(commandTitle, () => NpmRunner.getOutput(mod, [ "view", "--json" ], {
     ignoreExitCode: true
   }));
