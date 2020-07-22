@@ -28,18 +28,20 @@ export namespace NpmRunner {
   }
 
 
-  export async function run(module: LocalModule, args: string | string[], options?: utils.SpawnOptions): Promise<string> {
+  export async function run(module: LocalModule | undefined, args: string | string[], options?: utils.SpawnOptions): Promise<string> {
     if (typeof args === "string") {
       args = [ args ];
     }
 
     let result = await utils.runCommand(utils.getNpmExecutable(), args, {
-      cwd: module.path,
+      cwd: module ? module.path : undefined,
       env: buildNpmEnv(),
       ...options
     });
 
-    getPackageReader().invalidate(module.path);
+    if (module) {
+      getPackageReader().invalidate(module.path);
+    }
 
     return result;
   }

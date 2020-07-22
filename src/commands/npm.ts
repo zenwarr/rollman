@@ -13,16 +13,10 @@ export async function npmCommand() {
 
   getConfig().processVerbose = true;
 
-  let project = getProject();
-
-  let dir = process.cwd();
-
-  let mod = project.modules.find(module => module.path === dir);
-  if (!mod) {
-    throw new Error(`Failed to find local module at current working directory ("${ dir }")`);
-  }
-
   await NpmRegistry.init();
 
+  let project = getProject();
+  let dir = process.cwd();
+  let mod = project.modules.find(module => module.path === dir);
   await NpmRunner.run(mod, args.args);
 }
