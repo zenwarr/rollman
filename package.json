@@ -31,17 +31,17 @@
     "@types/git-url-parse": "^9.0.0",
     "@types/ini": "^1.3.29",
     "@types/minimatch": "~3.0.3",
-    "@types/node": "~14.0.11",
+    "@types/node": "~14.0.24",
     "@types/npm-packlist": "^1.1.1",
     "@types/ora": "~3.2.0",
     "@types/prompts": "~2.0.8",
-    "@types/semver": "~7.2.0",
+    "@types/semver": "~7.3.1",
     "tslint": "~6.1.2",
-    "typescript": "~3.9.5"
+    "typescript": "~3.9.7"
   },
   "dependencies": {
     "argparse": "^1.0.10",
-    "chalk": "~4.0.0",
+    "chalk": "~4.1.0",
     "columnify": "~1.5.4",
     "fs-extra": "~9.0.1",
     "git-url-parse": "^11.1.2",
@@ -49,10 +49,10 @@
     "ini": "^1.3.5",
     "minimatch": "~3.0.4",
     "npm-packlist": "~2.1.2",
-    "ora": "~4.0.4",
+    "ora": "~4.0.5",
     "prompts": "~2.3.2",
     "semver": "~7.3.2",
-    "verdaccio": "~4.6.2"
+    "verdaccio": "~4.8.0"
   },
   "bin": {
     "rollman": "./rollman.js"
