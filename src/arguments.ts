@@ -30,8 +30,6 @@ export type Arguments = {
   subCommand: "npm";
   args: string[];
 } | {
-  subCommand: "publish";
-} | {
   subCommand: "server";
 } | {
   subCommand: "release";
@@ -123,8 +121,6 @@ export class ArgumentsManager {
       nargs: argparse.Const.REMAINDER,
       defaultValue: []
     });
-
-    subparsers.addParser("publish", { help: "Publish module" });
 
     subparsers.addParser("server", { help: "Start local npm registry server" });
 

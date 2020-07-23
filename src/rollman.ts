@@ -9,7 +9,6 @@ import { NpmRC } from "./npmrc";
 import { ModuleStateManager } from "./module-state-manager";
 import { npmCommand } from "./commands/npm";
 import { outdatedCommand } from "./upgrade/outdated-command";
-import { publishCommand } from "./commands/publish";
 import { Config, getConfig } from "./config/config";
 import { startServerCommand } from "./commands/server";
 import { shutdown } from "./shutdown";
@@ -44,7 +43,6 @@ async function asyncStart(): Promise<void> {
     sync: syncCommand,
     outdated: outdatedCommand,
     npm: npmCommand,
-    publish: publishCommand,
     server: startServerCommand,
     release: releaseCommand
   };
