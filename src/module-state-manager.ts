@@ -32,7 +32,7 @@ export class ModuleStateManager {
     const resultFiles: SubsetFilesState = {};
 
     const subset = new AllFilesSubset(mod);
-    await subset.walk(async (filename, stat) => {
+    await subset.walk(async(filename, stat) => {
       if (this.isInAnySubset(mod, filename)) {
         resultFiles[filename] = stat.mtime.valueOf();
       }

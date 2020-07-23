@@ -5,7 +5,7 @@ import { ServiceLocator } from "./locator";
 
 export class PackageReader {
   public getPackageMetadataPath(modPath: string): string {
-    return path.join(modPath, "package.json")
+    return path.join(modPath, "package.json");
   }
 
   public readPackageMetadata(dirPath: string): any | undefined {

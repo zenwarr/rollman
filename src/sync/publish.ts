@@ -104,7 +104,7 @@ async function getNewVersion(mod: LocalModule, text?: string): Promise<string> {
   return version;
 }
 
-async function publishModule(mod: LocalModule): Promise<{ publishedVersion: string, versionChanged: boolean }> {
+async function publishModule(mod: LocalModule): Promise<{ publishedVersion: string; versionChanged: boolean }> {
   let publishedVersion: string | undefined;
 
   let info = await getNpmInfoReader().getNpmInfo(mod);
@@ -146,7 +146,7 @@ async function publishModule(mod: LocalModule): Promise<{ publishedVersion: stri
   stateManager.saveState(mod, subset.getName(), await stateManager.getActualState(mod));
 
   return {
-    publishedVersion: publishedVersion,
+    publishedVersion,
     versionChanged
   };
 }
