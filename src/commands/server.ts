@@ -2,9 +2,14 @@ import * as chalk from "chalk";
 import { NpmRegistry } from "../registry";
 import { getConfig, RegistryServerType } from "../config/config";
 import { shutdown } from "../shutdown";
+import * as events from "events";
 
 
-export async function startServerCommand() {
+class Piggy extends events.EventEmitter {
+}
+
+
+export async function startServerCommand(): Promise<void> {
   let config = getConfig();
 
   if (config.registryServerType !== RegistryServerType.ManagedLocal) {
@@ -13,4 +18,12 @@ export async function startServerCommand() {
   }
 
   await NpmRegistry.init();
+
+  return new Promise(resolve => {
+    let piggy = new Piggy();
+    piggy.on("fly", () => {
+      // we should never return, NpmRegistry class process.exit when server closes
+      resolve();
+    });
+  });
 }
