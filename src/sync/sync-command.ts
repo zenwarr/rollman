@@ -50,6 +50,26 @@ function getRequirement(parent: LocalModule, dep: string): DepRequirement | unde
 }
 
 
+function maxSatisfyingWithPrerelease(versions: string[], pattern: string): string | undefined {
+  let matchingVersions = versions.filter(v => {
+    let coerced = semver.coerce(v);
+    if (!coerced) {
+      return false;
+    }
+    return semver.satisfies(coerced.version, pattern);
+  });
+
+  let greatest: string | undefined;
+  for (let matchedVersion of matchingVersions) {
+    if (!greatest || semver.gt(matchedVersion, greatest)) {
+      greatest = matchedVersion;
+    }
+  }
+
+  return greatest;
+}
+
+
 async function shouldUpdateDep(publishInfo: Map<LocalModule, PublishInfo>, parent: LocalModule, dep: LocalModule): Promise<ModSpecifier | undefined> {
   let pInfo = publishInfo.get(dep);
   if (!pInfo) {
@@ -67,10 +87,9 @@ async function shouldUpdateDep(publishInfo: Map<LocalModule, PublishInfo>, paren
     return undefined;
   }
 
-  let wanted = semver.maxSatisfying(publishedVersions, requirement.range);
-
+  let wanted = maxSatisfyingWithPrerelease(publishedVersions, requirement.range);
   if (!wanted) {
-    // should we give some warning
+    // should we give some warning?
     return undefined;
   }
 

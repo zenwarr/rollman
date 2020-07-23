@@ -62,7 +62,7 @@ function getNextSyncVersion(currentVersion: string): string {
   return `${ cv.major }.${ cv.minor }.${ cv.patch }-dev.${ ++syncID }`;
 }
 
-async function getVersionForPublish(mod: LocalModule): Promise<{ version: string, shouldChange: boolean }> {
+async function getVersionForPublish(mod: LocalModule): Promise<{ version: string; shouldChange: boolean }> {
   let info = await getNpmInfoReader().getNpmInfo(mod);
   if (info.isCurrentVersionPublished || !info.currentVersion) {
     if (!info.currentVersion) {
