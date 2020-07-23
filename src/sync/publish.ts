@@ -10,6 +10,8 @@ import * as path from "path";
 import * as fs from "fs-extra";
 import * as semver from "semver";
 import { getNpmInfoReader } from "../npm-info-reader";
+import { getPackageReader } from "../package-reader";
+import { BuildDependenciesSubset } from "../subsets/build-dependencies-subset";
 
 
 async function arePublishDepsChanged(mod: LocalModule) {
@@ -63,39 +65,28 @@ let prevSelectedRelease: number | undefined;
 
 let releaseChoices: semver.ReleaseType[] = [ "major", "premajor", "minor", "preminor", "patch", "prepatch" ];
 
-async function getNewVersionFrom(currentVersion: string, mod: LocalModule): Promise<string> {
-  let response = await prompts({
-    type: "select",
-    name: "release",
-    message: `Version ${ currentVersion } of module "${ mod.checkedName.name }" is already published on npm registry. Please set another version: `,
-    choices: [
-      ...releaseChoices.map(choice => ({
-        title: choice,
-        description: getOptionVersion(currentVersion, choice),
-        value: choice
-      })),
-      { title: "custom", description: "Enter custom version...", value: "custom" }
-    ],
-    initial: prevSelectedRelease
-  });
+function startSyncSemver(cv: semver.SemVer): string {
+  return `${ cv.major }.${ cv.minor }.${ cv.patch }-dev.${ 1 }`;
+}
 
-  let releaseType: semver.ReleaseType | "custom" | undefined = response.release;
-  if (!releaseType) {
-    shutdown(-1);
+function getNewVersionFrom(currentVersion: string): string {
+  let cv = semver.parse(currentVersion);
+  if (!cv) {
+    throw new Error(`Cannot parse semver: "${ currentVersion }"`);
   }
 
-  prevSelectedRelease = (releaseChoices as string[]).indexOf(releaseType);
-
-  if (releaseType === "custom") {
-    return getNewVersion(mod, `Enter new version for module "${ mod.checkedName.name }":`);
+  if (cv.prerelease.length !== 2 || cv.prerelease[0] !== "dev") {
+    return startSyncSemver(cv);
   }
 
-  let newVersion = semver.inc(currentVersion, releaseType);
-  if (!newVersion) {
-    return getNewVersionFrom(currentVersion, mod);
+  let syncID = +cv.prerelease[1];
+  if (isNaN(syncID)) {
+    return startSyncSemver(cv);
   }
 
-  return newVersion;
+  ++syncID;
+
+  return `${ cv.major }.${ cv.minor }.${ cv.patch }-dev.${ syncID }`;
 }
 
 async function getNewVersion(mod: LocalModule, text?: string): Promise<string> {
@@ -113,15 +104,16 @@ async function getNewVersion(mod: LocalModule, text?: string): Promise<string> {
   return version;
 }
 
-async function publishModule(mod: LocalModule): Promise<string> {
+async function publishModule(mod: LocalModule): Promise<{ publishedVersion: string, versionChanged: boolean }> {
   let publishedVersion: string | undefined;
 
   let info = await getNpmInfoReader().getNpmInfo(mod);
 
+  let versionChanged = false;
   if (info.isCurrentVersionPublished || !info.currentVersion) {
-    let newVersion = info.currentVersion ? await getNewVersionFrom(info.currentVersion, mod) : await getNewVersion(mod);
-
+    let newVersion = info.currentVersion ? getNewVersionFrom(info.currentVersion) : await getNewVersion(mod);
     await setPackageVersion(mod, newVersion);
+    versionChanged = true;
     publishedVersion = newVersion;
   } else if (!info.isOnRegistry) {
     publishedVersion = info.currentVersion;
@@ -153,7 +145,10 @@ async function publishModule(mod: LocalModule): Promise<string> {
   let subset = new PublishDependenciesSubset(mod);
   stateManager.saveState(mod, subset.getName(), await stateManager.getActualState(mod));
 
-  return publishedVersion;
+  return {
+    publishedVersion: publishedVersion,
+    versionChanged
+  };
 }
 
 
@@ -164,7 +159,16 @@ async function publishModule(mod: LocalModule): Promise<string> {
  */
 export async function publishModuleIfChanged(mod: LocalModule): Promise<string | undefined> {
   if (await needsPublish(mod)) {
-    return publishModule(mod);
+    let publishResult = await publishModule(mod);
+    if (publishResult.versionChanged) {
+      // update module state
+      let packageJSONPath = getPackageReader().getPackageMetadataPath(mod.path);
+      let stateManager = getStateManager();
+      stateManager.updateFileState(mod, PublishDependenciesSubset.getTag(), packageJSONPath);
+      stateManager.updateFileState(mod, BuildDependenciesSubset.getTag(), packageJSONPath);
+    }
+
+    return publishResult.publishedVersion;
   }
 
   return undefined;

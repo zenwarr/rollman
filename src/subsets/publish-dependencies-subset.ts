@@ -7,8 +7,13 @@ import * as packlist from "npm-packlist";
  * Subset of files that are going to be published to npm.
  */
 export class PublishDependenciesSubset extends ModuleSubset {
-  public getName(): string {
+  public static getTag(): string {
     return "publish";
+  }
+
+
+  public getName(): string {
+    return PublishDependenciesSubset.getTag();
   }
 
 

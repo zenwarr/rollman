@@ -32,7 +32,7 @@ export class ModuleStateManager {
     const resultFiles: SubsetFilesState = {};
 
     const subset = new AllFilesSubset(mod);
-    await subset.walk(async(filename, stat) => {
+    await subset.walk(async (filename, stat) => {
       if (this.isInAnySubset(mod, filename)) {
         resultFiles[filename] = stat.mtime.valueOf();
       }
@@ -86,6 +86,19 @@ export class ModuleStateManager {
   }
 
 
+  public updateFileState(module: LocalModule, tag: string, filepath: string): void {
+    let savedState = this.getSavedState(module, tag);
+    if (!savedState) {
+      return;
+    }
+
+    let stat = fs.statSync(filepath);
+    savedState.files[filepath] = stat.mtime.valueOf();
+
+    this.saveState(module, tag, savedState);
+  }
+
+
   public async isSubsetChanged(module: LocalModule, tag: string, subset: ModuleSubset): Promise<boolean> {
     let savedState = this.getSavedState(module, tag);
     if (!savedState) {
@@ -134,7 +147,7 @@ export class ModuleStateManager {
 
   private getModuleStateFilePath(module: LocalModule, tag: string): string {
     let hash = crypto.createHash("sha256").update(module.path).digest("hex");
-    return path.join(STATE_DIR, `state-${tag}-${ hash }.json`);
+    return path.join(STATE_DIR, `state-${ tag }-${ hash }.json`);
   }
 
 

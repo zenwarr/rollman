@@ -6,8 +6,13 @@ import * as mimimatch from "minimatch";
  * Subset of files that should trigger a module rebuild
  */
 export class BuildDependenciesSubset extends ModuleSubset {
-  public getName() {
+  public static getTag(): string {
     return "build";
+  }
+
+
+  public getName() {
+    return BuildDependenciesSubset.getTag();
   }
 
 
