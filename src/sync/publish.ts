@@ -20,7 +20,7 @@ async function arePublishDepsChanged(mod: LocalModule) {
 
 
 async function buildModuleAndCheckItNeedsPublish(mod: LocalModule): Promise<boolean> {
-  if (!mod.useNpm) {
+  if (!mod.useNpm || !mod.publish) {
     return false;
   }
 

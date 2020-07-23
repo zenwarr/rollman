@@ -16,6 +16,7 @@ interface RawModuleConfig {
   buildCommands?: unknown;
   useNpm?: unknown;
   buildTriggers?: unknown;
+  publish?: unknown;
 }
 
 
@@ -37,6 +38,7 @@ export interface LocalModuleConfig {
   buildCommands: string[];
   useNpm: boolean;
   isFromMainProject: boolean;
+  publish: boolean;
 }
 
 
@@ -67,6 +69,10 @@ export class LocalModule {
 
   public get buildTriggers() {
     return this._config.buildTriggers;
+  }
+
+  public get publish() {
+    return this._config.publish;
   }
 
 
@@ -176,6 +182,14 @@ export class LocalModule {
       buildTriggers = rawConfig.buildTriggers;
     }
 
+    let publish = true;
+    if ("publish" in rawConfig) {
+      if (typeof rawConfig.publish !== "boolean") {
+        throw new Error("'publish' should be a boolean");
+      }
+      publish = rawConfig.publish;
+    }
+
     return new LocalModule({
       repository,
       name,
@@ -186,7 +200,8 @@ export class LocalModule {
       npmIgnorePath,
       useNpm,
       isFromMainProject,
-      buildTriggers
+      buildTriggers,
+      publish
     });
   }
 
