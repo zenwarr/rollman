@@ -2,7 +2,7 @@ import { NpmRegistry } from "../registry";
 import { getArgs } from "../arguments";
 import { getDirectLocalDeps, walkAllLocalModules, WalkerAction } from "../deps/dry-dependency-tree";
 import { fetchLocalModule } from "../fetch";
-import { publishModuleIfChanged } from "./publish";
+import { publishModuleForSync } from "./publish";
 import { ModSpecifier, installDependencies } from "./update-deps";
 import { LocalModule } from "../local-module";
 import { NpmViewInfo } from "./npm-view";
@@ -12,8 +12,8 @@ import * as path from "path";
 import { getNpmInfoReader } from "../npm-info-reader";
 
 
-interface PublishInfo {
-  publishedVersion?: string;
+export interface PublishInfo {
+  publishedVersion: string;
   info: NpmViewInfo;
 }
 
@@ -147,11 +147,13 @@ async function syncModules(): Promise<void> {
 
     await installDependencies(mod, depsToUpdate);
 
-    let publishedVersion = await publishModuleIfChanged(mod);
-    publishInfo.set(mod, {
-      publishedVersion,
-      info: await getNpmInfoReader().getNpmInfo(mod)
-    });
+    let publishedVersion = await publishModuleForSync(mod);
+    if (publishedVersion) {
+      publishInfo.set(mod, {
+        publishedVersion,
+        info: await getNpmInfoReader().getNpmInfo(mod)
+      });
+    }
 
     return WalkerAction.Continue;
   });

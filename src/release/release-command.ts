@@ -1,39 +1,11 @@
-import { getArgs } from "../arguments";
-import { ReleaseType } from "./release-types";
-import { getCwdModule } from "../cwd-module";
-import { LocalModule } from "../local-module";
-import * as chalk from "chalk";
-import { shutdown } from "../shutdown";
-import { getCurrentPackageVersion, setPackageVersion } from "../sync/npm-view";
-import * as semver from "semver";
-import { runCommand } from "../process";
-
-
-function getNewReleaseVersion(mod: LocalModule, releaseType: ReleaseType) {
-  let currentVersion = getCurrentPackageVersion(mod);
-  if (!currentVersion) {
-    throw new Error("No version specified");
-  }
-
-  switch (releaseType) {
-    case ReleaseType.Major:
-      return semver.inc(currentVersion, "premajor");
-
-    case ReleaseType.Minor:
-      return semver.inc(currentVersion, "preminor");
-
-    case ReleaseType.Patch:
-    case ReleaseType.Hotfix:
-      return semver.inc(currentVersion, "prepatch");
-  }
-}
-
-
-async function checkoutReleaseBranch(mod: LocalModule, version: string) {
-  let coerced = semver.coerce(version)!.version;
-  let args = [ "checkout", "-b", coerced ];
-  await runCommand("git", args);
-}
+import {getArgs} from "../arguments";
+import {LocalModule} from "../local-module";
+import {NpmRegistry} from "../registry";
+import {getDirectLocalDeps, walkAllLocalModules, WalkerAction} from "../deps/dry-dependency-tree";
+import {installDependencies, ModSpecifier} from "../sync/update-deps";
+import {publishModuleForRelease} from "../sync/publish";
+import {getNpmInfoReader} from "../npm-info-reader";
+import {PublishInfo} from "../sync/sync-command";
 
 
 export async function releaseCommand() {
@@ -43,22 +15,36 @@ export async function releaseCommand() {
     throw new Error("Expected release");
   }
 
-  let mod = getCwdModule();
-  if (!mod.useNpm) {
-    console.error(chalk.red("Cannot release current module: does not use npm"));
-    shutdown(-1);
-  }
+  await NpmRegistry.init();
 
-  if (args.releaseCommand === "begin") {
-    let version = getNewReleaseVersion(mod, args.beginReleaseType)!;
-    await checkoutReleaseBranch(mod, version);
-    await setPackageVersion(mod, version);
-  } else if (args.releaseCommand === "end") {
-    let currentVersion = getCurrentPackageVersion(mod);
-    // we do not merge branch into parent here, because:
-    // 1. we have no reliable way to find parent branch
-    // 2. we do not want to deal with merge conflicts here.
-    let coerced = semver.coerce(currentVersion)?.version!;
-    await setPackageVersion(mod, coerced);
-  }
+  let releaseType = args.releaseType;
+
+  let publishInfo = new Map<LocalModule, PublishInfo>();
+  await walkAllLocalModules(async mod => {
+    if (!mod.useNpm) {
+      return WalkerAction.Continue;
+    }
+
+    let depsToUpdate: ModSpecifier[] = []; // in this array we keep info on which modules update and which version to install
+    for (let localDep of getDirectLocalDeps(mod)) {
+      if (publishInfo.has(localDep)) {
+        depsToUpdate.push({
+          mod: localDep,
+          version: publishInfo.get(localDep)!.publishedVersion
+        });
+      }
+    }
+
+    await installDependencies(mod, depsToUpdate);
+
+    let publishedVersion = await publishModuleForRelease(mod, releaseType);
+    if (publishedVersion) {
+      publishInfo.set(mod, {
+        publishedVersion,
+        info: await getNpmInfoReader().getNpmInfo(mod)
+      });
+    }
+
+    return WalkerAction.Continue;
+  });
 }

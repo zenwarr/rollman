@@ -1,15 +1,16 @@
-import { LocalModule } from "../local-module";
-import { getStateManager } from "../module-state-manager";
-import { PublishDependenciesSubset } from "../subsets/publish-dependencies-subset";
-import { buildModuleIfChanged } from "../build";
-import { NpmRunner } from "../module-npm-runner";
+import {LocalModule} from "../local-module";
+import {getStateManager} from "../module-state-manager";
+import {PublishDependenciesSubset} from "../subsets/publish-dependencies-subset";
+import {buildModuleIfChanged} from "../build";
+import {NpmRunner} from "../module-npm-runner";
 import * as path from "path";
 import * as fs from "fs-extra";
 import * as semver from "semver";
-import { getNpmInfoReader } from "../npm-info-reader";
-import { getPackageReader } from "../package-reader";
-import { BuildDependenciesSubset } from "../subsets/build-dependencies-subset";
-import { setPackageVersion } from "./npm-view";
+import {getNpmInfoReader} from "../npm-info-reader";
+import {getPackageReader} from "../package-reader";
+import {BuildDependenciesSubset} from "../subsets/build-dependencies-subset";
+import {setPackageVersion} from "./npm-view";
+import {ReleaseType} from "../release/release-types";
 
 
 async function arePublishDepsChanged(mod: LocalModule) {
@@ -41,13 +42,13 @@ async function buildModuleAndCheckItNeedsPublish(mod: LocalModule): Promise<bool
 
 
 function startSyncSemver(cv: semver.SemVer): string {
-  return `${ cv.major }.${ cv.minor }.${ cv.patch + 1 }-dev.${ 1 }`;
+  return `${cv.major}.${cv.minor}.${cv.patch + 1}-dev.${1}`;
 }
 
 function getNextSyncVersion(currentVersion: string): string {
   let cv = semver.parse(currentVersion);
   if (!cv) {
-    throw new Error(`Cannot parse semver: "${ currentVersion }"`);
+    throw new Error(`Cannot parse semver: "${currentVersion}"`);
   }
 
   if (cv.prerelease.length !== 2 || cv.prerelease[0] !== "dev") {
@@ -59,39 +60,55 @@ function getNextSyncVersion(currentVersion: string): string {
     return startSyncSemver(cv);
   }
 
-  return `${ cv.major }.${ cv.minor }.${ cv.patch }-dev.${ ++syncID }`;
+  return `${cv.major}.${cv.minor}.${cv.patch}-dev.${++syncID}`;
 }
 
-async function getVersionForPublish(mod: LocalModule): Promise<{ version: string; shouldChange: boolean }> {
+function isSyncVersion(version: string): boolean {
+  let parsed = semver.parse(version);
+  if (!parsed) {
+    throw new Error(`Invalid semver version: "${parsed}"`);
+  }
+
+  return parsed.prerelease.length === 2 && parsed.prerelease[0] === "dev" && !isNaN(+parsed.prerelease[1]);
+}
+
+async function getVersionForSync(mod: LocalModule): Promise<string> {
   let info = await getNpmInfoReader().getNpmInfo(mod);
   if (info.isCurrentVersionPublished || !info.currentVersion) {
     if (!info.currentVersion) {
-      throw new Error(`No version set in package.json: "${ mod.name }"`);
+      throw new Error(`No version set in package.json: "${mod.name}"`);
     }
 
-    return {
-      version: getNextSyncVersion(info.currentVersion),
-      shouldChange: true
-    };
+    return getNextSyncVersion(info.currentVersion);
   } else if (!info.isOnRegistry) {
-    console.log(`Module "${ mod.checkedName.name }" is not yet published on npm registry.`);
-    return {
-      version: info.currentVersion,
-      shouldChange: false
-    };
+    console.log(`Module "${mod.checkedName.name}" is not yet published on npm registry.`);
+    return info.currentVersion;
   } else {
-    console.log(`Version ${ info.currentVersion } of module "${ mod.checkedName.name }" is not yet published on npm registry`);
-    return {
-      version: info.currentVersion,
-      shouldChange: false
-    };
+    console.log(`Version ${info.currentVersion} of module "${mod.checkedName.name}" is not yet published on npm registry`);
+    return info.currentVersion;
   }
 }
 
-async function publishModule(mod: LocalModule): Promise<string> {
-  let publishVersion = await getVersionForPublish(mod);
-  if (publishVersion.shouldChange) {
-    await setPackageVersion(mod, publishVersion.version);
+async function getVersionForRelease(mod: LocalModule, releaseType: ReleaseType): Promise<string> {
+  let currentVersion: string | undefined = (await getPackageReader().readPackageMetadata(mod.path)).version;
+  if (!currentVersion) {
+    throw new Error(`Module "${mod.checkedName.name}" has no version set in package.json`);
+  }
+
+  let newVersion = semver.inc(currentVersion, releaseType);
+  if (!newVersion) {
+    throw new Error(`Failed to get release "${releaseType}" version for module "${mod.checkedName.name}"`);
+  }
+
+  return newVersion;
+}
+
+async function publishModule(mod: LocalModule, version: string): Promise<void> {
+  let versionChanged = false;
+  let npmInfo = await getNpmInfoReader().getNpmInfo(mod);
+  if (npmInfo.currentVersion !== version) {
+    await setPackageVersion(mod, version);
+    versionChanged = true;
   }
 
   let isIgnoreCopied = false;
@@ -103,7 +120,7 @@ async function publishModule(mod: LocalModule): Promise<string> {
   }
 
   try {
-    await NpmRunner.run(mod, [ "publish" ]);
+    await NpmRunner.run(mod, ["publish"]);
   } finally {
     getNpmInfoReader().invalidate(mod);
 
@@ -114,11 +131,9 @@ async function publishModule(mod: LocalModule): Promise<string> {
 
   let stateManager = getStateManager();
   stateManager.saveState(mod, PublishDependenciesSubset.getTag(), await stateManager.getActualState(mod));
-  if (publishVersion.shouldChange) {
+  if (versionChanged) {
     stateManager.updateFileState(mod, BuildDependenciesSubset.getTag(), getPackageReader().getPackageMetadataPath(mod.path));
   }
-
-  return publishVersion.version;
 }
 
 
@@ -127,10 +142,31 @@ async function publishModule(mod: LocalModule): Promise<string> {
  * Returns updated version of this module if module was published.
  * Returns undefined if module was not published.
  */
-export async function publishModuleIfChanged(mod: LocalModule): Promise<string | undefined> {
+export async function publishModuleForSync(mod: LocalModule): Promise<string | undefined> {
   if (await buildModuleAndCheckItNeedsPublish(mod)) {
-    return publishModule(mod);
+    let syncVersion = await getVersionForSync(mod);
+    await publishModule(mod, syncVersion);
+    return syncVersion;
   }
 
   return undefined;
+}
+
+
+export async function publishModuleForRelease(mod: LocalModule, releaseType: ReleaseType): Promise<string | undefined> {
+  let shouldPublish = await buildModuleAndCheckItNeedsPublish(mod);
+  if (!shouldPublish) {
+    let currentVersion: string | undefined = getPackageReader().readPackageMetadata(mod.path).version;
+    if (!currentVersion) {
+      throw new Error(`Module "${mod.checkedName.name}" has no version set in package.json`);
+    }
+
+    if (!isSyncVersion(currentVersion)) {
+      return undefined;
+    }
+  }
+
+  let newVersion = await getVersionForRelease(mod, releaseType);
+  await publishModule(mod, newVersion);
+  return newVersion;
 }
