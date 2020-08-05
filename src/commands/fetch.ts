@@ -4,7 +4,7 @@ import { getProject } from "../project";
 import { walkAllLocalModules } from "../deps/dry-dependency-tree";
 import { fetchLocalModule } from "../fetch";
 import { installModuleDepsIfNotInitialized } from "../deps/deps";
-import { publishModuleForSync } from "../sync/publish";
+import { publishModuleForFetch } from "../sync/publish";
 
 
 export async function fetchCommand() {
@@ -25,7 +25,7 @@ export async function fetchCommand() {
   if (!args.noInstall) {
     await walkAllLocalModules(async mod => {
       await installModuleDepsIfNotInitialized(mod);
-      await publishModuleForSync(mod);
+      await publishModuleForFetch(mod);
     });
   }
 }
