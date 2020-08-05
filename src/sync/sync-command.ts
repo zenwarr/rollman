@@ -56,6 +56,7 @@ function maxSatisfyingWithPrerelease(versions: string[], pattern: string): strin
     if (!coerced) {
       return false;
     }
+
     return semver.satisfies(coerced.version, pattern);
   });
 
@@ -151,6 +152,11 @@ async function syncModules(): Promise<void> {
     if (publishedVersion) {
       publishInfo.set(mod, {
         publishedVersion,
+        info: await getNpmInfoReader().getNpmInfo(mod)
+      });
+    } else {
+      publishInfo.set(mod, {
+        publishedVersion: getPackageReader().readPackageMetadata(mod.path).version,
         info: await getNpmInfoReader().getNpmInfo(mod)
       });
     }
