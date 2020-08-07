@@ -5,7 +5,6 @@ import * as ini from "ini";
 import * as url from "url";
 import * as path from "path";
 import * as os from "os";
-import { getProjectIfExists } from "./project";
 
 
 export type NpmConfig = {
@@ -33,8 +32,7 @@ export class NpmRC {
 
 
   public constructor() {
-    const config = getProjectIfExists();
-    this._npmrc = this.load(config ? config.mainProjectDir : undefined);
+    this._npmrc = this.load(process.cwd());
   }
 
 

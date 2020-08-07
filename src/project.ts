@@ -263,6 +263,3 @@ export function getProject() {
 }
 
 
-export function getProjectIfExists() {
-  return ServiceLocator.instance.getIfExists<Project>("project");
-}
