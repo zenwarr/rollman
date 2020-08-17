@@ -114,7 +114,7 @@ async function publishModule(mod: LocalModule, version: string): Promise<void> {
   let isIgnoreCopied = false;
   let outsideIgnore = mod.outsideIgnoreFilePath;
   let insideIgnore = path.join(mod.path, ".npmignore");
-  if (outsideIgnore) {
+  if (outsideIgnore && !fs.existsSync(insideIgnore)) {
     fs.copyFileSync(outsideIgnore, insideIgnore);
     isIgnoreCopied = true;
   }
