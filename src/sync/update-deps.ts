@@ -1,7 +1,6 @@
 import { LocalModule } from "../local-module";
 import { NpmRunner } from "../module-npm-runner";
 import { Lockfile } from "../lockfile";
-import { getRegistry } from "../registry";
 import * as path from "path";
 import * as fs from "fs-extra";
 
@@ -30,6 +29,6 @@ export async function installDependencies(into: LocalModule, modules: ModSpecifi
 
   if (Lockfile.existsInModule(into)) {
     let lockfile = Lockfile.forModule(into);
-    lockfile.updateResolveUrl(getRegistry().address);
+    lockfile.updateResolveUrl();
   }
 }

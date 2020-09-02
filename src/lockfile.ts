@@ -67,7 +67,7 @@ export class Lockfile {
   }
 
 
-  public updateResolveUrl(localHost: string) {
+  public updateResolveUrl() {
     let registryHost = getHostFromUrl(getRegistry().address);
 
     this.mutateDependencies(dep => {
