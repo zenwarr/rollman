@@ -1,3 +1,4 @@
+import * as fs from "fs";
 import { getArgs } from "../arguments";
 import { getProject } from "../project";
 import { NpmRunner } from "../module-npm-runner";
@@ -20,7 +21,7 @@ export async function npmCommand() {
   await NpmRegistry.init();
 
   let project = getProject();
-  let dir = process.cwd();
+  let dir = fs.realpathSync(process.cwd());
   let mod = project.modules.find(module => module.path === dir);
 
   let npmArgs = args.args;

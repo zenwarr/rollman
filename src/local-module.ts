@@ -116,6 +116,10 @@ export class LocalModule {
       modulePath = path.resolve(configDir, parsed.name);
     }
 
+    if (modulePath) {
+      modulePath = fs.realpathSync(modulePath);
+    }
+
     let name: ModuleNpmName | undefined;
     if ("name" in rawConfig) {
       if (typeof rawConfig.name !== "string") {
