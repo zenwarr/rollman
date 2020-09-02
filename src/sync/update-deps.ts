@@ -29,6 +29,6 @@ export async function installDependencies(into: LocalModule, modules: ModSpecifi
 
   if (Lockfile.existsInModule(into)) {
     let lockfile = Lockfile.forModule(into);
-    lockfile.updateResolveUrl();
+    lockfile.update();
   }
 }

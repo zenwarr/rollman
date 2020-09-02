@@ -4,6 +4,8 @@ import * as url from "url";
 import { LocalModule, npmNameFromPackageName } from "./local-module";
 import { getRegistryForPackage } from "./registry-paths";
 import { getRegistry } from "./registry";
+import { getProject } from "./project";
+import { getNpmRc } from "./npmrc";
 
 
 const LOCKFILE_NAME = "package-lock.json";
@@ -67,14 +69,30 @@ export class Lockfile {
   }
 
 
-  public updateResolveUrl() {
+  public update() {
     let registryHost = getHostFromUrl(getRegistry().address);
+    let project = getProject();
 
-    this.mutateDependencies(dep => {
+    this.mutateDependencies((dep, name) => {
       if (dep.resolved) {
         dep.resolved = this.resolveRegistryUrl(dep.resolved, registryHost);
       }
+
+      if (project.disableCustomRegistryIntegrity && this.isOnCustomRegistry(name)) {
+        delete dep.integrity;
+      }
     });
+  }
+
+
+  private isOnCustomRegistry(packageName: string) {
+    let npmName = npmNameFromPackageName(packageName);
+    if (!npmName.scope) {
+      return false;
+    }
+
+    let npmrc = getNpmRc();
+    return npmrc.getCustomRegistry(npmName.scope) != null;
   }
 
 

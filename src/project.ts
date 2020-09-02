@@ -18,6 +18,7 @@ interface RawConfig {
   defaultBranch?: unknown;
   defaultUseNpm?: unknown;
   defaultBuildTriggers?: unknown;
+  disableCustomRegistryIntegrity?: unknown;
 }
 
 
@@ -29,6 +30,7 @@ interface ProjectConfigInit {
   defaultBranch: string;
   defaultUseNpm: boolean;
   defaultBuildTriggers: string[];
+  disableCustomRegistryIntegrity: boolean;
 }
 
 
@@ -57,6 +59,10 @@ export class Project {
 
   public get defaultBuildTriggers() {
     return this._project.defaultBuildTriggers;
+  }
+
+  public get disableCustomRegistryIntegrity() {
+    return this._project.disableCustomRegistryIntegrity;
   }
 
   public get modules() {
@@ -130,6 +136,14 @@ export class Project {
       defaultBuildTriggers = rawConfig.defaultBuildTriggers;
     }
 
+    let disableCustomRegistryIntegrity = false;
+    if ("disableCustomRegistryIntegrity" in rawConfig) {
+      if (typeof rawConfig.disableCustomRegistryIntegrity !== "boolean") {
+        throw new Error("'disableCustomRegistryIntegrity' should be a boolean");
+      }
+      disableCustomRegistryIntegrity = rawConfig.disableCustomRegistryIntegrity;
+    }
+
     let appConfig = new Project({
       mainProjectDir,
       mainModulesDir,
@@ -137,7 +151,8 @@ export class Project {
       defaultNpmIgnorePath,
       defaultBranch,
       defaultUseNpm,
-      defaultBuildTriggers
+      defaultBuildTriggers,
+      disableCustomRegistryIntegrity
     });
 
     appConfig._modules = this.loadModules(projectFilename, rawConfig, appConfig, isMainConfig, ignoreMissing);
@@ -255,7 +270,6 @@ export class Project {
     ServiceLocator.instance.initialize("project", project);
   }
 }
-
 
 
 export function getProject() {

@@ -2,10 +2,10 @@ import * as child_process from "child_process";
 import * as chalk from "chalk";
 import * as path from "path";
 import * as fs from "fs-extra";
-import {ServiceLocator} from "./locator";
-import {Config, getConfig, RegistryServerType} from "./config/config";
-import {getNpmRc} from "./npmrc";
-import {shutdown} from "./shutdown";
+import { ServiceLocator } from "./locator";
+import { Config, getConfig, RegistryServerType } from "./config/config";
+import { getNpmRc } from "./npmrc";
+import { shutdown } from "./shutdown";
 
 
 function getUplinkNameFromUrl(url: string) {
@@ -21,7 +21,7 @@ export class NpmRegistry {
   public get address(): string {
     let config = getConfig();
     if (config.registryServerType === RegistryServerType.ManagedLocal) {
-      return `http://localhost:${config.managedRegistryPort}/`;
+      return `http://localhost:${ config.managedRegistryPort }/`;
     } else {
       return config.remoteRegistryUrl!;
     }
@@ -36,7 +36,7 @@ export class NpmRegistry {
 
 
   private buildConfig(): string {
-    let config = {...require("./verdaccio/config-template.json")};
+    let config = { ...require("./verdaccio/config-template.json") };
     config.storage = this.getStoragePath();
 
     let uplinkDomains = new Set<string>();
@@ -46,16 +46,16 @@ export class NpmRegistry {
     for (let prefix of registries) {
       let domain = npmrc.getCustomRegistry(prefix);
       if (!domain) {
-        throw new Error(`No domain found for custom registry ${prefix} in .npmrc`);
+        throw new Error(`No domain found for custom registry ${ prefix } in .npmrc`);
       }
 
       let uplink = getUplinkNameFromUrl(domain);
       uplinkDomains.add(domain);
 
       if (prefix === "default") {
-        config.packages["**"].proxy = [uplink];
+        config.packages["**"].proxy = [ uplink ];
       } else {
-        let pattern = `${prefix}/*`;
+        let pattern = `${ prefix }/*`;
         if (pattern in config.packages) {
           config.packages[pattern].proxy.push(uplink);
         } else {
@@ -87,7 +87,8 @@ export class NpmRegistry {
         auth: token ? {
           type: "bearer",
           token
-        } : undefined
+        } : undefined,
+        max_fails: 6
       };
     }
 
@@ -117,7 +118,7 @@ export class NpmRegistry {
       let verdaccioConfigPath = this.buildConfig();
 
       let port = config.managedRegistryPort!;
-      this.proc = child_process.spawn("node", [verdaccioPath, "-c", verdaccioConfigPath, "-l", "" + port], {
+      this.proc = child_process.spawn("node", [ verdaccioPath, "-c", verdaccioConfigPath, "-l", "" + port ], {
         stdio: "pipe",
         stderr: "pipe"
       } as any);
@@ -131,7 +132,7 @@ export class NpmRegistry {
           }
 
           if (line.includes("http address")) {
-            console.log(chalk.gray(`Local npm registry server listening on port ${port}`));
+            console.log(chalk.gray(`Local npm registry server listening on port ${ port }`));
             resolve();
           }
         });
@@ -146,13 +147,13 @@ export class NpmRegistry {
 
       this.proc.on("close", code => {
         if (!this.closeHasIntention) {
-          console.error(chalk.red(`Verdaccio server closed: ${code}`));
+          console.error(chalk.red(`Verdaccio server closed: ${ code }`));
           shutdown(-1);
         }
       });
 
       this.proc.on("error", error => {
-        console.error(chalk.red(`Verdaccio server error: ${error.message}`));
+        console.error(chalk.red(`Verdaccio server error: ${ error.message }`));
         shutdown(-1);
       });
     });

@@ -42,6 +42,7 @@ export class NpmRC {
 
 
   public getCustomRegistry(namespace: string): string | undefined {
+    namespace = namespace !== "default" && !namespace.startsWith("@") ? "@" + namespace : namespace;
     return this._npmrc.registries[namespace];
   }
 
