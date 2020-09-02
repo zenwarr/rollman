@@ -90,7 +90,7 @@ export class LocalModule {
 
 
   public static createFromConfig(rawConfig: RawModuleConfig, appConfig: Project, isFromMainProject: boolean, configDir: string): LocalModule {
-    let repository: string | undefined = undefined;
+    let repository: string | undefined;
     if ("repository" in rawConfig) {
       if (typeof rawConfig.repository !== "string") {
         throw new Error("'repository' should be a string");
