@@ -74,8 +74,13 @@ export class Project {
   }
 
 
-  public getModuleInfo(moduleName: string): LocalModule | null {
+  public getModule(moduleName: string): LocalModule | null {
     return this._modules.find(module => module.name && module.name.name === moduleName) || null;
+  }
+
+  public getModuleByPath(modulePath: string): LocalModule | null {
+    modulePath = fs.realpathSync(modulePath);
+    return this._modules.find(mod => mod.path === modulePath) || null;
   }
 
 

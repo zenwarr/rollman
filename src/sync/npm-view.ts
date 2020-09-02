@@ -4,6 +4,7 @@ import * as semver from "semver";
 import * as chalk from "chalk";
 import { getPackageReader } from "../package-reader";
 import {operationSpinner} from "../process";
+import { getNpmInfoReader } from "../npm-info-reader";
 
 
 export interface NpmViewInfo {
@@ -57,6 +58,7 @@ export function getCurrentPackageVersion(mod: LocalModule): string | undefined {
 
 export async function setPackageVersion(mod: LocalModule, version: string) {
   await NpmRunner.run(mod, [ "version", version, "--no-git-tag-version" ]);
+  getPackageReader().invalidate(mod.path);
 }
 
 

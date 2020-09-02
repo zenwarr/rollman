@@ -37,7 +37,7 @@ export function getDirectLocalDeps(module: LocalModule): LocalModule[] {
   }
 
   const project = getProject();
-  return getDirectDeps(module.path).map(moduleName => project.getModuleInfo(moduleName)).filter(dep => dep != null) as LocalModule[];
+  return getDirectDeps(module.path).map(moduleName => project.getModule(moduleName)).filter(dep => dep != null) as LocalModule[];
 }
 
 

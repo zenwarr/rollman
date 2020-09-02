@@ -10,6 +10,7 @@ import { getPackageReader } from "../package-reader";
 import * as semver from "semver";
 import * as path from "path";
 import { getNpmInfoReader } from "../npm-info-reader";
+import { getProject } from "../project";
 
 
 export interface PublishInfo {
@@ -50,35 +51,10 @@ function getRequirement(parent: LocalModule, dep: string): DepRequirement | unde
 }
 
 
-function maxSatisfyingWithPrerelease(versions: string[], pattern: string): string | undefined {
-  let matchingVersions = versions.filter(v => {
-    let coerced = semver.coerce(v);
-    if (!coerced) {
-      return false;
-    }
-
-    return semver.satisfies(coerced.version, pattern);
-  });
-
-  let greatest: string | undefined;
-  for (let matchedVersion of matchingVersions) {
-    if (!greatest || semver.gt(matchedVersion, greatest)) {
-      greatest = matchedVersion;
-    }
-  }
-
-  return greatest;
-}
-
-
-async function shouldUpdateDep(publishInfo: Map<LocalModule, PublishInfo>, parent: LocalModule, dep: LocalModule): Promise<ModSpecifier | undefined> {
-  let pInfo = publishInfo.get(dep);
-  if (!pInfo) {
-    if (!dep.useNpm) {
-      throw new Error(`Module ${ parent.checkedName.name } depends on ${ dep.checkedName.name }, but the latter has "useNpm" flag set to false`);
-    } else {
-      throw new Error(`Internal error: broken walk order for parent ${ parent.checkedName.name } and child ${ dep.checkedName.name }`);
-    }
+async function shouldUpdateDep(parent: LocalModule, dep: LocalModule): Promise<ModSpecifier | undefined> {
+  let currentDepVersion = getPackageReader().readPackageMetadata(dep.path).version;
+  if (!currentDepVersion) {
+    return undefined;
   }
 
   let requirement = getRequirement(parent, dep.checkedName.name);
@@ -90,14 +66,14 @@ async function shouldUpdateDep(publishInfo: Map<LocalModule, PublishInfo>, paren
   if (!installedDepVersion) {
     return {
       mod: dep,
-      version: pInfo.publishedVersion
+      version: currentDepVersion
     };
   }
 
-  if (semver.gt(pInfo.publishedVersion, installedDepVersion)) {
+  if (semver.gt(currentDepVersion, installedDepVersion)) {
     return {
       mod: dep,
-      version: pInfo.publishedVersion
+      version: currentDepVersion
     };
   }
 
@@ -122,7 +98,6 @@ async function getInstalledVersion(parent: LocalModule, dep: string): Promise<st
 async function syncModules(): Promise<void> {
   await walkAllLocalModules(async module => fetchLocalModule(module));
 
-  let publishInfo = new Map<LocalModule, PublishInfo>();
   await walkAllLocalModules(async mod => {
     if (!mod.useNpm) {
       return WalkerAction.Continue;
@@ -132,7 +107,7 @@ async function syncModules(): Promise<void> {
     // we check if new version we just published still matches version pattern specified in this module, and only update if new version matches semver pattern.
     let depsToUpdate: ModSpecifier[] = []; // in this array we keep info on which modules update and which version to install
     for (let localDep of getDirectLocalDeps(mod)) {
-      let req = await shouldUpdateDep(publishInfo, mod, localDep);
+      let req = await shouldUpdateDep(mod, localDep);
       if (req) {
         depsToUpdate.push(req);
       }
@@ -140,21 +115,24 @@ async function syncModules(): Promise<void> {
 
     await installDependencies(mod, depsToUpdate);
 
-    let publishedVersion = await publishModuleForSync(mod);
-    if (publishedVersion) {
-      publishInfo.set(mod, {
-        publishedVersion,
-        info: await getNpmInfoReader().getNpmInfo(mod)
-      });
-    } else {
-      publishInfo.set(mod, {
-        publishedVersion: getPackageReader().readPackageMetadata(mod.path).version,
-        info: await getNpmInfoReader().getNpmInfo(mod)
-      });
-    }
+    await publishModuleForSync(mod);
 
     return WalkerAction.Continue;
   });
+}
+
+
+async function syncSingleModule(mod: LocalModule): Promise<void> {
+  for (let localDep of getDirectLocalDeps(mod)) {
+    let depsToUpdate: ModSpecifier[] = [];
+
+    let req = await shouldUpdateDep(mod, localDep);
+    if (req) {
+      depsToUpdate.push(req);
+    }
+
+    await installDependencies(mod, depsToUpdate);
+  }
 }
 
 
@@ -167,5 +145,14 @@ export async function syncCommand() {
 
   await NpmRegistry.init();
 
-  return syncModules();
+  if (args.depsOnly) {
+    let mod = getProject().getModuleByPath(process.cwd());
+    if (!mod) {
+      throw new Error(`No local module found at the current directory: ${ process.cwd() }`);
+    }
+
+    return syncSingleModule(mod);
+  } else {
+    return syncModules();
+  }
 }

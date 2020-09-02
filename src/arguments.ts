@@ -1,7 +1,7 @@
-import {ServiceLocator} from "./locator";
+import { ServiceLocator } from "./locator";
 import * as argparse from "argparse";
 import * as path from "path";
-import {ReleaseType} from "./release/release-types";
+import { ReleaseType } from "./release/release-types";
 
 
 export type Arguments = {
@@ -11,6 +11,7 @@ export type Arguments = {
   registryVerbose: boolean;
 } & ({
   subCommand: "sync";
+  depsOnly: boolean;
 } | {
   subCommand: "fetch";
   noInstall: boolean;
@@ -46,7 +47,7 @@ export class ArgumentsManager {
     let argparser = new argparse.ArgumentParser({
       addHelp: true
     });
-    argparser.addArgument(["--config", "-c"], {
+    argparser.addArgument([ "--config", "-c" ], {
       help: "Path to config file or a directory containing config file named rollman.json"
     });
     argparser.addArgument("--ignore-missing-included-modules", {
@@ -73,9 +74,15 @@ export class ArgumentsManager {
       dest: "subCommand"
     });
 
-    subparsers.addParser("sync", {help: "Synchronize all local modules"});
+    let syncParser = subparsers.addParser("sync", { help: "Synchronize all local modules" });
+    syncParser.addArgument("--deps-only", {
+      help: "Only synchronizes dependencies for the current module. Does not publish the module.",
+      action: "storeTrue",
+      defaultValue: false,
+      dest: "depsOnly"
+    });
 
-    let fetchParser = subparsers.addParser("fetch", {help: "Fetches and initializes all local modules"});
+    let fetchParser = subparsers.addParser("fetch", { help: "Fetches and initializes all local modules" });
     fetchParser.addArgument("--no-install", {
       help: "Do not run install steps or build modules after fetching",
       action: "storeTrue",
@@ -83,18 +90,18 @@ export class ArgumentsManager {
       dest: "noInstall"
     });
 
-    subparsers.addParser("list-modules", {help: "List all modules loaded from the configuration files"});
-    subparsers.addParser("dependency-tree", {help: "Show local modules dependency tree"});
+    subparsers.addParser("list-modules", { help: "List all modules loaded from the configuration files" });
+    subparsers.addParser("dependency-tree", { help: "Show local modules dependency tree" });
 
     let cleanParser = subparsers.addParser("clean");
     let cleanSubparsers = cleanParser.addSubparsers({
       title: "What to clean",
       dest: "cleanWhat"
     });
-    cleanSubparsers.addParser("state", {help: "Clean saved local modules state"});
-    cleanSubparsers.addParser("all", {help: "Clean local NPM server cache, saved local modules cache and temp files"});
+    cleanSubparsers.addParser("state", { help: "Clean saved local modules state" });
+    cleanSubparsers.addParser("all", { help: "Clean local NPM server cache, saved local modules cache and temp files" });
 
-    let outdatedParser = subparsers.addParser("outdated", {help: "Shows and helps to update outdated dependencies"});
+    let outdatedParser = subparsers.addParser("outdated", { help: "Shows and helps to update outdated dependencies" });
     outdatedParser.addArgument("--upgrade", {
       help: "Automatically update all dependencies to wanted versions",
       action: "storeTrue",
@@ -114,19 +121,19 @@ export class ArgumentsManager {
       dest: "withIncluded"
     });
 
-    let npmParser = subparsers.addParser("npm", {help: "Run npm command"});
+    let npmParser = subparsers.addParser("npm", { help: "Run npm command" });
     npmParser.addArgument("args", {
       help: "npm command arguments",
       nargs: argparse.Const.REMAINDER,
       defaultValue: []
     });
 
-    subparsers.addParser("server", {help: "Start local npm registry server"});
+    subparsers.addParser("server", { help: "Start local npm registry server" });
 
-    let releaseParser = subparsers.addParser("release", {help: "Release management"});
+    let releaseParser = subparsers.addParser("release", { help: "Release management" });
     releaseParser.addArgument("releaseType", {
       help: "Release type",
-      choices: ["minor", "major", "patch", "hotfix"]
+      choices: [ "minor", "major", "patch", "hotfix" ]
     });
 
     let args: Arguments = argparser.parseArgs();
