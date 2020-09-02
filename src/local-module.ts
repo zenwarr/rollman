@@ -28,7 +28,7 @@ export interface ModuleNpmName {
 
 
 export interface LocalModuleConfig {
-  repository: string;
+  repository?: string;
   branch: string;
   path: string;
   ignoreScope: boolean;
@@ -90,14 +90,12 @@ export class LocalModule {
 
 
   public static createFromConfig(rawConfig: RawModuleConfig, appConfig: Project, isFromMainProject: boolean, configDir: string): LocalModule {
-    let repository: string;
+    let repository: string | undefined = undefined;
     if ("repository" in rawConfig) {
       if (typeof rawConfig.repository !== "string") {
         throw new Error("'repository' should be a string");
       }
       repository = rawConfig.repository;
-    } else {
-      throw new Error("'repository' is missing");
     }
 
     let modulePath: string | undefined;
@@ -110,6 +108,10 @@ export class LocalModule {
         modulePath = path.resolve(configDir, modulePath);
       }
     } else {
+      if (!repository) {
+        throw new Error("No 'repository' nor 'path' present in module config");
+      }
+
       const parsed = gitUrlParse(repository);
       modulePath = path.resolve(configDir, parsed.name);
     }
