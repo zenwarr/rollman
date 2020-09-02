@@ -81,16 +81,8 @@ async function shouldUpdateDep(publishInfo: Map<LocalModule, PublishInfo>, paren
     }
   }
 
-  let publishedVersions = pInfo.info.publishedVersions;
-
   let requirement = getRequirement(parent, dep.checkedName.name);
   if (!requirement) {
-    return undefined;
-  }
-
-  let wanted = maxSatisfyingWithPrerelease(publishedVersions, requirement.range);
-  if (!wanted) {
-    // should we give some warning?
     return undefined;
   }
 
@@ -98,14 +90,14 @@ async function shouldUpdateDep(publishInfo: Map<LocalModule, PublishInfo>, paren
   if (!installedDepVersion) {
     return {
       mod: dep,
-      version: wanted
+      version: pInfo.publishedVersion
     };
   }
 
-  if (semver.gt(wanted, installedDepVersion)) {
+  if (semver.gt(pInfo.publishedVersion, installedDepVersion)) {
     return {
       mod: dep,
-      version: wanted
+      version: pInfo.publishedVersion
     };
   }
 
