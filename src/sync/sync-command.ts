@@ -123,16 +123,16 @@ async function syncModules(): Promise<void> {
 
 
 async function syncSingleModule(mod: LocalModule): Promise<void> {
-  for (let localDep of getDirectLocalDeps(mod)) {
-    let depsToUpdate: ModSpecifier[] = [];
+  let depsToUpdate: ModSpecifier[] = [];
 
+  for (let localDep of getDirectLocalDeps(mod)) {
     let req = await shouldUpdateDep(mod, localDep);
     if (req) {
       depsToUpdate.push(req);
     }
-
-    await installDependencies(mod, depsToUpdate);
   }
+
+  await installDependencies(mod, depsToUpdate);
 }
 
 
