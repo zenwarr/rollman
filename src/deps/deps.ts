@@ -4,6 +4,7 @@ import { NpmRunner } from "../module-npm-runner";
 import { LocalModule } from "../local-module";
 import { buildModuleIfChanged } from "../build";
 import { getPackageReader } from "../package-reader";
+import { Lockfile } from "../lockfile";
 
 
 function needsDepsInstall(mod: LocalModule): boolean {
@@ -35,7 +36,7 @@ export async function installModuleDepsIfNotInitialized(mod: LocalModule) {
     return;
   }
 
-  await NpmRunner.install(mod);
+  await NpmRunner.run(mod, Lockfile.existsInModule(mod) ? "ci" : "install")
 
   await buildModuleIfChanged(mod);
 }
