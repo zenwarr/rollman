@@ -52,7 +52,9 @@ async function publishModule(mod: LocalModule): Promise<void> {
   }
 
   try {
-    await NpmRunner.run(mod, [ "unpublish", `${ mod.checkedName.name }@${ npmInfo.currentVersion }` ]);
+    if (npmInfo.currentVersion && npmInfo.publishedVersions.includes(npmInfo.currentVersion)) {
+      await NpmRunner.run(mod, [ "unpublish", `${ mod.checkedName.name }@${ npmInfo.currentVersion }` ]);
+    }
     await NpmRunner.run(mod, [ "publish" ]);
   } finally {
     getNpmInfoReader().invalidate(mod);
