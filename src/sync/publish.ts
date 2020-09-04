@@ -92,11 +92,7 @@ export async function publishModuleForFetch(mod: LocalModule): Promise<void> {
     return;
   }
 
-  let npmInfo = await getNpmInfoReader().getNpmInfo(mod);
-  let isPublished = npmInfo.publishedVersions.includes(currentVersion);
-  if (!isPublished) {
-    await publishModule(mod);
-  }
+  await publishModule(mod);
 }
 
 
