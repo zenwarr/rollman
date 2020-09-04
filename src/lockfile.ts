@@ -74,9 +74,9 @@ export class Lockfile {
     let project = getProject();
 
     this.mutateDependencies((dep, name) => {
-      if (dep.resolved) {
-        dep.resolved = this.resolveRegistryUrl(dep.resolved, registryHost);
-      }
+      // if (dep.resolved) {
+      //   dep.resolved = this.resolveRegistryUrl(dep.resolved, registryHost);
+      // }
 
       if (project.disableCustomRegistryIntegrity && this.isOnCustomRegistry(name)) {
         delete dep.integrity;
