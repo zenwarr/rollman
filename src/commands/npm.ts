@@ -25,7 +25,7 @@ export async function npmCommand() {
 
   await NpmRunner.run(mod || undefined, npmArgs);
 
-  if (mod && npmArgs.length > 1 && CAN_CHANGE_LOCKFILE.includes(npmArgs[0]) && Lockfile.existsInModule(mod)) {
+  if (mod && npmArgs.length >= 1 && CAN_CHANGE_LOCKFILE.includes(npmArgs[0]) && Lockfile.existsInModule(mod)) {
     Lockfile.forModule(mod).update();
   }
 }
