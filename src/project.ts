@@ -80,7 +80,7 @@ export class Project {
 
   public getModuleByPath(modulePath: string): LocalModule | null {
     modulePath = fs.realpathSync(modulePath);
-    return this._modules.find(mod => mod.path === modulePath) || null;
+    return this._modules.find(mod => fs.realpathSync(mod.path) === modulePath) || null;
   }
 
 
