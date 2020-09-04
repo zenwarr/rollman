@@ -36,7 +36,7 @@ export async function installModuleDepsIfNotInitialized(mod: LocalModule) {
     return;
   }
 
-  await NpmRunner.run(mod, Lockfile.existsInModule(mod) ? "ci" : "install")
+  await NpmRunner.run(mod, Lockfile.existsInModule(mod) ? "ci" : "install");
 
   await buildModuleIfChanged(mod);
 }
