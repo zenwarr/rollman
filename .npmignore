@@ -3,4 +3,7 @@ package-lock.json
 node_modules
 *.ts
 *.js.map
-
+.eslintignore
+.eslintrc.json
+.github
+tsconfig.json
