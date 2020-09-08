@@ -45,12 +45,14 @@ function hasExecPermission(filename: string): boolean {
 async function copyFile(source: string, target: string, isExecutable: boolean): Promise<void> {
   // here we always copy a file by loading it into memory because fs.copyFile has problems on VirtualBox shared folders
   let fileContent = fs.readFileSync(source);
+
+  // eslint-disable-next-line no-bitwise
   fs.writeFileSync(target, fileContent, { mode: (isExecutable ? 0o0100 : 0) | 0o666 });
 }
 
 
 async function walkDirectoryFiles(startDir: string, walker: (filename: string, stat: fs.Stats) => Promise<void>): Promise<void> {
-  const handle = async(filename: string) => {
+  const handle = async (filename: string) => {
     let stat: fs.Stats;
 
     try {
@@ -82,7 +84,7 @@ export async function quickSync(source: LocalModule, targetDir: string, targetNa
   let filesCopied = 0;
 
   let publishSubset = new PublishDependenciesSubset(source);
-  await publishSubset.walk(async(filename: string, stat: fs.Stats) => {
+  await publishSubset.walk(async (filename: string, stat: fs.Stats) => {
     let target = path.join(targetDir, path.relative(source.path, filename));
 
     if (!stat.isDirectory()) {
@@ -207,7 +209,7 @@ async function quickSyncRemove(source: LocalModule, subset: ModuleSubset, syncTa
   let filesToRemove: [ string, fs.Stats ][] = [];
   let removedCount = 0, failedCount = 0;
 
-  await walkDirectoryFiles(syncTarget, async(filename, stat) => {
+  await walkDirectoryFiles(syncTarget, async (filename, stat) => {
     let relpath = path.relative(syncTarget, filename);
 
     let sourceFilename = path.join(source.path, relpath);

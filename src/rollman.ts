@@ -57,7 +57,7 @@ async function asyncStart(): Promise<void> {
 
 
 export function start(): void {
-  // tslint:disable-next-line no-floating-promises
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises
   asyncStart().then(() => {
     shutdown(0);
   });

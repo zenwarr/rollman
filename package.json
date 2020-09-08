@@ -6,8 +6,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node index.js",
-    "lint": "tslint --project tsconfig.json --format verbose",
-    "lint-fix": "tslint --project tsconfig.json --format verbose --fix"
+    "lint": "eslint --ext .ts .",
+    "lint-fix": "eslint --fix --ext .ts ."
   },
   "repository": {
     "type": "git",
@@ -36,7 +36,13 @@
     "@types/ora": "~3.2.0",
     "@types/prompts": "~2.0.8",
     "@types/semver": "~7.3.1",
-    "tslint": "~6.1.2",
+    "@typescript-eslint/eslint-plugin": "~4.1.0",
+    "@typescript-eslint/eslint-plugin-tslint": "~4.1.0",
+    "@typescript-eslint/parser": "~4.1.0",
+    "eslint": "~7.8.1",
+    "eslint-plugin-import": "~2.22.0",
+    "eslint-plugin-jsdoc": "~30.3.3",
+    "eslint-plugin-prefer-arrow": "~1.2.2",
     "typescript": "~4.0.2"
   },
   "dependencies": {

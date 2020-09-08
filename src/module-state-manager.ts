@@ -144,7 +144,7 @@ export class ModuleStateManager {
       new PublishDependenciesSubset(module)
     ];
 
-    return subsets.some(subset => subset.isFileIncluded(filename));
+    return subsets.some(async subset => subset.isFileIncluded(filename));
   }
 
 

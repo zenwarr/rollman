@@ -3,7 +3,7 @@ import { NpmRunner } from "../module-npm-runner";
 import * as semver from "semver";
 import * as chalk from "chalk";
 import { getPackageReader } from "../package-reader";
-import {operationSpinner} from "../process";
+import { operationSpinner } from "../process";
 
 
 export interface NpmViewInfo {
@@ -26,7 +26,7 @@ export interface NpmViewInfo {
 
 async function getNpmViewResult(mod: LocalModule) {
   let commandTitle = `Inspecting published versions of "${ mod.checkedName.name }"`;
-  const output = await operationSpinner(commandTitle, () => NpmRunner.getOutput(mod, [ "view", "--json" ], {
+  const output = await operationSpinner(commandTitle, async () => NpmRunner.getOutput(mod, [ "view", "--json" ], {
     ignoreExitCode: true
   }));
 

@@ -39,7 +39,7 @@ export abstract class ModuleSubset {
    * Walker is called with absolute path to a file.
    */
   public async walk(walker: (filename: string, state: fs.Stats) => Promise<void>) {
-    const onEntry = async(entry: string) => {
+    const onEntry = async (entry: string) => {
       if (!this.isKnownIgnoredDir(entry)) {
         return;
       }
