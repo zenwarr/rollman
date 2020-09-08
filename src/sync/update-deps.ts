@@ -11,7 +11,7 @@ export interface ModSpecifier {
 }
 
 
-export async function installDependencies(into: LocalModule, modules: ModSpecifier[]) {
+export async function syncDependencies(into: LocalModule, modules: ModSpecifier[]) {
   if (!modules.length) {
     return;
   }
@@ -23,9 +23,17 @@ export async function installDependencies(into: LocalModule, modules: ModSpecifi
     await NpmRunner.run(into, "install");
   }
 
-  let parts = modules.map(child => `${ child.mod.checkedName.name }@${ child.version }`);
+  // let quick = modules.filter(m => canQuickSync(m.mod, path.join(into.path, "node_modules", m.mod.checkedName.name)));
+  // for (let q of quick) {
+  //   await quickSync(q.mod, path.join(into.path, "node_modules", q.mod.checkedName.name), q.mod.checkedName.name);
+  // }
+  let quick: ModSpecifier[] = [];
 
-  await NpmRunner.run(into, [ "install", ...parts ]);
+  let slow = modules.filter(m => !quick.includes(m));
+  if (slow.length) {
+    let parts = slow.map(child => `${ child.mod.checkedName.name }@${ child.version }`);
+    await NpmRunner.run(into, [ "install", ...parts ]);
+  }
 
   if (Lockfile.existsInModule(into)) {
     let lockfile = Lockfile.forModule(into);

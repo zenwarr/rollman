@@ -3,7 +3,7 @@ import { getArgs } from "../arguments";
 import { getDirectLocalDeps, walkAllLocalModules, WalkerAction } from "../deps/dry-dependency-tree";
 import { fetchLocalModule } from "../fetch";
 import { publishModuleForSync } from "./publish";
-import { ModSpecifier, installDependencies } from "./update-deps";
+import { ModSpecifier, syncDependencies } from "./update-deps";
 import { LocalModule } from "../local-module";
 import { NpmViewInfo } from "./npm-view";
 import { getPackageReader } from "../package-reader";
@@ -37,7 +37,7 @@ async function syncModules(): Promise<void> {
       }
     }
 
-    await installDependencies(mod, depsToUpdate);
+    await syncDependencies(mod, depsToUpdate);
 
     let isUpdated = await publishModuleForSync(mod);
     if (isUpdated || depsToUpdate.length > 0) {
@@ -50,7 +50,7 @@ async function syncModules(): Promise<void> {
 
 
 async function syncSingleModule(mod: LocalModule): Promise<void> {
-  await installDependencies(mod, getDirectLocalDeps(mod).map(dep => ({
+  await syncDependencies(mod, getDirectLocalDeps(mod).map(dep => ({
     mod: dep,
     version: getPackageReader().readPackageMetadata(dep.path).version
   })));

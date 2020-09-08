@@ -2,7 +2,7 @@ import {getArgs} from "../arguments";
 import {LocalModule} from "../local-module";
 import {NpmRegistry} from "../registry";
 import {getDirectLocalDeps, walkAllLocalModules, WalkerAction} from "../deps/dry-dependency-tree";
-import {installDependencies, ModSpecifier} from "../sync/update-deps";
+import {syncDependencies, ModSpecifier} from "../sync/update-deps";
 import {publishModuleForRelease} from "../sync/publish";
 import {getNpmInfoReader} from "../npm-info-reader";
 import {PublishInfo} from "../sync/sync-command";
@@ -35,7 +35,7 @@ export async function releaseCommand() {
       }
     }
 
-    await installDependencies(mod, depsToUpdate);
+    await syncDependencies(mod, depsToUpdate);
 
     let publishedVersion = await publishModuleForRelease(mod, releaseType);
     if (publishedVersion) {
