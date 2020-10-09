@@ -59,7 +59,7 @@ export class ArgumentsManager {
     argparser.addArgument("--verbose", {
       help: "Verbose child process output",
       action: "storeTrue",
-      defaultValue: false,
+      defaultValue: true,
       dest: "verbose"
     });
     argparser.addArgument("--registry-verbose", {
