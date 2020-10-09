@@ -36,7 +36,7 @@ export type Arguments = {
   subCommand: "release";
   releaseType: ReleaseType;
 } | {
-  subCommand: "install-ignore"
+  subCommand: "install-ignore";
 });
 
 
