@@ -16,6 +16,7 @@ import { syncCommand } from "./sync/sync-command";
 import { releaseCommand } from "./release/release-command";
 import { PackageReader } from "./package-reader";
 import { NpmInfoReader } from "./npm-info-reader";
+import { installIgnoreCommand } from "./commands/install-ignore";
 
 
 async function asyncStart(): Promise<void> {
@@ -44,7 +45,8 @@ async function asyncStart(): Promise<void> {
     outdated: outdatedCommand,
     npm: npmCommand,
     server: startServerCommand,
-    release: releaseCommand
+    release: releaseCommand,
+    "install-ignore": installIgnoreCommand
   };
 
   const command = COMMANDS[args.subCommand];

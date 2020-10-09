@@ -35,6 +35,8 @@ export type Arguments = {
 } | {
   subCommand: "release";
   releaseType: ReleaseType;
+} | {
+  subCommand: "install-ignore"
 });
 
 
@@ -135,6 +137,8 @@ export class ArgumentsManager {
       help: "Release type",
       choices: [ "minor", "major", "patch", "hotfix" ]
     });
+
+    subparsers.addParser("install-ignore", { help: "Installs outside-project .npmignore files to module directory" });
 
     let args: Arguments = argparser.parseArgs();
     this._args = args;
