@@ -40,6 +40,29 @@ async function buildModuleAndCheckItNeedsPublish(mod: LocalModule): Promise<bool
 }
 
 
+async function unpublishModule(mod: LocalModule, version: string): Promise<void> {
+  let result = await NpmRunner.getOutput(mod, [ "unpublish", "--json", `${ mod.checkedName.name }@${ version }` ], {
+    ignoreExitCode: true
+  });
+  if (!result) {
+    return;
+  }
+
+  let parsedResult;
+  try {
+    parsedResult = JSON.parse(result);
+  } catch (error) {
+    return;
+  }
+
+  if (parsedResult.error && parsedResult.error.code === "E404") {
+    return;
+  }
+
+  throw new Error(result);
+}
+
+
 async function publishModule(mod: LocalModule): Promise<void> {
   let npmInfo = await getNpmInfoReader().getNpmInfo(mod);
 
@@ -53,7 +76,7 @@ async function publishModule(mod: LocalModule): Promise<void> {
 
   try {
     if (npmInfo.currentVersion && npmInfo.publishedVersions.includes(npmInfo.currentVersion)) {
-      await NpmRunner.run(mod, [ "unpublish", `${ mod.checkedName.name }@${ npmInfo.currentVersion }` ]);
+      await unpublishModule(mod, npmInfo.currentVersion);
     }
     await NpmRunner.run(mod, [ "publish" ]);
   } finally {
