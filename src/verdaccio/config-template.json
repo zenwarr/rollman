@@ -5,7 +5,8 @@
   },
   "uplinks": {
     "npmjs": {
-      "url": "https://registry.npmjs.org/"
+      "url": "https://registry.npmjs.org/",
+      "max_fails": 6
     }
   },
   "packages": {
