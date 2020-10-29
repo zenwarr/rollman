@@ -3,13 +3,13 @@ import * as path from "path";
 import { ServiceLocator } from "./locator";
 
 
-export class PackageReader {
-  public getPackageMetadataPath(modPath: string): string {
+export class ManifestReader {
+  public getPackageManifestPath(modPath: string): string {
     return path.join(modPath, "package.json");
   }
 
-  public readPackageMetadata(dirPath: string): any | undefined {
-    let filePath = this.getPackageMetadataPath(dirPath);
+  public readPackageManifest(dirPath: string): any | undefined {
+    let filePath = this.getPackageManifestPath(dirPath);
 
     if (this._metadataCache.has(filePath)) {
       return this._metadataCache.get(filePath)!;
@@ -42,13 +42,13 @@ export class PackageReader {
   }
 
   public static init() {
-    ServiceLocator.instance.initialize("packageReader", new PackageReader());
+    ServiceLocator.instance.initialize("manifestReader", new ManifestReader());
   }
 
   private _metadataCache = new Map<string, object | undefined>();
 }
 
 
-export function getPackageReader() {
-  return ServiceLocator.instance.get<PackageReader>("packageReader");
+export function getManifestReader() {
+  return ServiceLocator.instance.get<ManifestReader>("manifestReader");
 }

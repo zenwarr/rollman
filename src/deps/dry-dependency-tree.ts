@@ -1,6 +1,6 @@
 import { LocalModule } from "../local-module";
 import { getProject } from "../project";
-import { getPackageReader } from "../package-reader";
+import { getManifestReader } from "../manifest-reader";
 
 
 export enum WalkerAction {
@@ -12,18 +12,49 @@ export enum WalkerAction {
 export type LocalModuleWalker = (module: LocalModule) => Promise<WalkerAction | void>;
 
 
-export function getDirectDeps(packagePath: string, includeDev: boolean = true): string[] {
-  let pkg = getPackageReader().readPackageMetadata(packagePath);
+export interface ModuleDep {
+  name: string;
+  range: string;
+  type: DepType;
+}
+
+
+export function getDirectDeps(packagePath: string, includeDev: boolean = true): ModuleDep[] {
+  let pkg = getManifestReader().readPackageManifest(packagePath);
   if (!pkg) {
     return [];
   }
 
-  let deps = Object.keys(pkg.dependencies || {});
-  if (includeDev) {
-    deps = deps.concat(Object.keys(pkg.devDependencies || {}));
+  let result: ModuleDep[] = [];
+
+  function addDeps(obj: { [name: string]: string } | undefined, type: DepType) {
+    if (!obj) {
+      return;
+    }
+
+    for (let [ key, value ] of Object.entries(obj)) {
+      result.push({
+        name: key,
+        range: value,
+        type
+      });
+    }
   }
 
-  return deps;
+  addDeps(pkg.dependencies, DepType.Production);
+  addDeps(pkg.peerDependencies, DepType.Peer);
+  if (includeDev) {
+    addDeps(pkg.devDependencies, DepType.Dev);
+  }
+
+  return result;
+}
+
+
+export enum DepType {
+  Production,
+  Dev,
+  Peer,
 }
 
 
@@ -31,20 +62,21 @@ export function getDirectDeps(packagePath: string, includeDev: boolean = true): 
  * Returns list of all local modules listed in `dependencies` and `devDependencies` of the given module.
  * @param module
  */
-export function getDirectLocalDeps(module: LocalModule): LocalModule[] {
+export function getDirectLocalDeps(module: LocalModule): ModuleDep[] {
   if (!module.useNpm) {
     return [];
   }
 
   const project = getProject();
-  return getDirectDeps(module.path).map(moduleName => project.getModule(moduleName)).filter(dep => dep != null) as LocalModule[];
+  return getDirectDeps(module.path).filter(x => project.getModule(x.name) != null);
 }
 
 
 export async function walkAllLocalModules(walker: LocalModuleWalker): Promise<void> {
   const walked = new Set<LocalModule>();
+  const project = getProject();
 
-  const walkModule = async(mod: LocalModule, deps: LocalModule[], parents: LocalModule[]): Promise<WalkerAction> => {
+  const walkModule = async (mod: LocalModule, deps: LocalModule[], parents: LocalModule[]): Promise<WalkerAction> => {
     if (walked.has(mod)) {
       return WalkerAction.Continue;
     }
@@ -58,7 +90,7 @@ export async function walkAllLocalModules(walker: LocalModuleWalker): Promise<vo
         throw new Error(`Recursive dependency: ${ dep.name }, required by ${ parents.join(" -> ") }`);
       }
 
-      const action = await walkModule(dep, getDirectLocalDeps(dep), [ ...parents, mod ]);
+      const action = await walkModule(dep, getDirectLocalDeps(dep).map(x => project.getModuleChecked(x.name)), [ ...parents, mod ]);
       if (action === WalkerAction.Stop) {
         return WalkerAction.Stop;
       }
@@ -70,7 +102,7 @@ export async function walkAllLocalModules(walker: LocalModuleWalker): Promise<vo
   };
 
   for (let module of getProject().modules) {
-    const action = await walkModule(module, getDirectLocalDeps(module), []);
+    const action = await walkModule(module, getDirectLocalDeps(module).map(x => project.getModuleChecked(x.name)), []);
     if (action === WalkerAction.Stop) {
       return;
     }

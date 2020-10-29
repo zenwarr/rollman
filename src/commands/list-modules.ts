@@ -1,7 +1,6 @@
 import * as columnify from "columnify";
-import { getRegistryForPackage } from "../registry-paths";
 import { walkAllLocalModules } from "../deps/dry-dependency-tree";
-import { getPackageReader } from "../package-reader";
+import { getManifestReader } from "../manifest-reader";
 
 
 export async function listModulesCommand() {
@@ -9,11 +8,10 @@ export async function listModulesCommand() {
 
   await walkAllLocalModules(async module => {
     data.push({
-      name: module.name ? module.name.name : "<no name>",
+      npmName: module.name ? module.name.name : "<no name>",
       path: module.path,
-      registry: module.name ? getRegistryForPackage(module.name) : "<not fetched>",
       useNpm: module.useNpm,
-      version: module.path ? getPackageReader().readPackageMetadata(module.path)?.version : ""
+      version: module.path ? getManifestReader().readPackageManifest(module.path)?.version : ""
     });
   });
 

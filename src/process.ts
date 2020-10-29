@@ -1,7 +1,6 @@
 import * as child_process from "child_process";
 import * as chalk from "chalk";
 import * as ora from "ora";
-import { getConfig } from "./config/config";
 
 
 type ExtraRunOptions = {
@@ -70,7 +69,7 @@ export async function runCommand(command: string, args: null, options?: ExecOpti
 export async function runCommand(command: string, args: string[], options?: SpawnOptions): Promise<string>;
 export async function runCommand(command: string, args: string[] | null, options?: SpawnOptions | ExecOptions): Promise<string> {
   return new Promise<string>((resolve, reject) => {
-    let verbose = getConfig().processVerbose;
+    let verbose = false;
     let commandTitle = getCommandTitle(command, args, options);
 
     let commandSpinner: ora.Ora | undefined;
@@ -155,8 +154,8 @@ function logProcessExecuteError(exitCode: number, command: string, args: null | 
 }
 
 
-export function getNpmExecutable(): string {
-  return process.platform === "win32" ? "npm.cmd" : "npm";
+export function getYarnExecutable(): string {
+  return process.platform === "win32" ? "yarn.cmd" : "yarn";
 }
 
 
