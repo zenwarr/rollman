@@ -253,14 +253,14 @@ export async function releaseCommand() {
   }
 
   const updatedModules = new Map<string, { from: string; to: string }>();
-  const modulesToSkip = await getModulesToIgnore();
-  if (!modulesToSkip) {
+  const modulesToIgnore = await getModulesToIgnore();
+  if (!modulesToIgnore) {
     return;
   }
 
   await walkAllLocalModules(async mod => {
     const localDeps = getDirectLocalDeps(mod);
-    if (!mod.useNpm || isIgnored(modulesToSkip, localDeps, mod)) {
+    if (!mod.useNpm || isIgnored(modulesToIgnore, localDeps, mod)) {
       return WalkerAction.Continue;
     }
 
