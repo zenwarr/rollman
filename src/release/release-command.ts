@@ -178,6 +178,68 @@ function getShortCommitsOverview(commits: git.Commit[]): string {
 }
 
 
+async function getModulesToIgnore(): Promise<false | LocalModule[]> {
+  let result: false | LocalModule[] = [];
+
+  await walkAllLocalModules(async mod => {
+    if (!mod.useNpm) {
+      return;
+    }
+
+    let repo = await openRepo(mod.path);
+    if (!repo) {
+      return;
+    }
+
+    if (await hasUncommittedChanges(repo)) {
+      const reply = await prompts({
+        type: "select",
+        name: "value",
+        message: `Module ${ mod.checkedName.name } has uncommitted changes. Do you want to continue?`,
+        choices: [
+          {
+            title: "No, exit and do nothing",
+            value: "exit"
+          },
+          {
+            title: "Ignore, do not release the module and all modules that depend on it",
+            value: "ignore"
+          }
+        ]
+      });
+      if (reply.value === "exit") {
+        result = false;
+        return WalkerAction.Stop;
+      } else if (reply.value === "ignore" && result) {
+        result.push(mod);
+      }
+    }
+
+    return WalkerAction.Continue;
+  });
+
+  return result;
+}
+
+
+function isIgnored(skipAccumulator: LocalModule[], directLocalDeps: ModuleDep[], mod: LocalModule): boolean {
+  const project = getProject();
+
+  if (skipAccumulator.includes(mod)) {
+    return true;
+  }
+
+  const skipReason = directLocalDeps.find(d => skipAccumulator.includes(project.getModuleChecked(d.name)));
+  if (skipReason) {
+    console.log(`Skipping module ${ mod.checkedName.name } because it depends on ignore module ${skipReason.name}`);
+    skipAccumulator.push(mod);
+    return true;
+  }
+
+  return false;
+}
+
+
 export async function releaseCommand() {
   let args = getArgs();
   let project = getProject();
@@ -190,32 +252,15 @@ export async function releaseCommand() {
     throw new Error("Cancelled");
   }
 
-  let updatedModules = new Map<string, { from: string; to: string }>();
-
-  let hasChanges = false;
-  await walkAllLocalModules(async mod => {
-    if (!mod.useNpm) {
-      return;
-    }
-
-    let repo = await openRepo(mod.path);
-    if (!repo) {
-      return;
-    }
-
-    if (await hasUncommittedChanges(repo)) {
-      console.log(`Module ${ mod.checkedName.name } has uncommitted changes. Please make commit before continuing`);
-      hasChanges = true;
-      return;
-    }
-  });
-
-  if (hasChanges) {
+  const updatedModules = new Map<string, { from: string; to: string }>();
+  const modulesToSkip = await getModulesToIgnore();
+  if (!modulesToSkip) {
     return;
   }
 
   await walkAllLocalModules(async mod => {
-    if (!mod.useNpm) {
+    const localDeps = getDirectLocalDeps(mod);
+    if (!mod.useNpm || isIgnored(modulesToSkip, localDeps, mod)) {
       return WalkerAction.Continue;
     }
 
@@ -232,7 +277,6 @@ export async function releaseCommand() {
       return WalkerAction.Continue;
     }
 
-    let localDeps = getDirectLocalDeps(mod);
     let updateRanges: ModuleDep[] = [];
     for (let localDep of localDeps) {
       let depMod = project.getModuleChecked(localDep.name);
