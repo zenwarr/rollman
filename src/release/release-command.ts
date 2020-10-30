@@ -178,6 +178,28 @@ function getShortCommitsOverview(commits: git.Commit[]): string {
 }
 
 
+const DEFAULT_RELEASE_BRANCH = "master";
+
+
+async function ensureReleaseBranch(mod: LocalModule, repo: git.Repository): Promise<boolean> {
+  const manifest = getManifestReader().readPackageManifest(mod.path);
+  const releaseBranchesParam = manifest?.rollman?.releaseBranches;
+  if (releaseBranchesParam && (!Array.isArray(releaseBranchesParam) || !releaseBranchesParam.every(x => typeof x === "string"))) {
+    throw new Error(`Invalid rollman.releaseBranch parameter in module ${mod.checkedName.name}: array of strings expected`);
+  }
+
+  const releaseBranches: string[] = releaseBranchesParam ?? [ DEFAULT_RELEASE_BRANCH ];
+
+  const currentBranch = (await repo.getCurrentBranch()).name();
+  if (!releaseBranches.includes(currentBranch)) {
+    console.error(`Module ${mod.checkedName.name} is on branch ${currentBranch}, but releases are not allowed on this branch`);
+    return false;
+  }
+
+  return true;
+}
+
+
 async function getModulesToIgnore(): Promise<false | LocalModule[]> {
   let result: false | LocalModule[] = [];
 
@@ -191,7 +213,11 @@ async function getModulesToIgnore(): Promise<false | LocalModule[]> {
       return;
     }
 
-    if (await hasUncommittedChanges(repo)) {
+    if (!await ensureReleaseBranch(mod, repo)) {
+      result = false;
+    }
+
+    if (result !== false && await hasUncommittedChanges(repo)) {
       const reply = await prompts({
         type: "select",
         name: "value",
