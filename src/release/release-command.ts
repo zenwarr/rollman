@@ -4,13 +4,18 @@ import * as semver from "semver";
 import * as chalk from "chalk";
 import * as pluralize from "pluralize";
 import * as prompts from "prompts";
-import { getArgs } from "../arguments";
 import { DepType, getDirectLocalDeps, ModuleDep, walkAllLocalModules, WalkerAction } from "../deps/dry-dependency-tree";
 import { getManifestReader } from "../manifest-reader";
 import { getProject } from "../project";
 import { generateLockFile } from "lockfile-generator";
 import { LocalModule } from "../local-module";
 import { getYarnExecutable, runCommand } from "../process";
+
+
+interface ReleaseContext {
+  updated: Map<string, { from: string, to: string }>;
+  skipped: LocalModule[];
+}
 
 
 function setPackageVersion(dir: string, newVersion: string): void {
@@ -205,7 +210,7 @@ async function ensureReleaseBranch(mod: LocalModule, repo: git.Repository): Prom
 }
 
 
-async function getModulesToIgnore(): Promise<false | LocalModule[]> {
+async function getModulesToSkip(): Promise<false | LocalModule[]> {
   let result: false | LocalModule[] = [];
 
   await walkAllLocalModules(async mod => {
@@ -253,17 +258,17 @@ async function getModulesToIgnore(): Promise<false | LocalModule[]> {
 }
 
 
-function isIgnored(skipAccumulator: LocalModule[], directLocalDeps: ModuleDep[], mod: LocalModule): boolean {
+function shouldBeSkipped(ctx: ReleaseContext, directLocalDeps: ModuleDep[], mod: LocalModule): boolean {
   const project = getProject();
 
-  if (skipAccumulator.includes(mod)) {
+  if (ctx.skipped.includes(mod)) {
     return true;
   }
 
-  const skipReason = directLocalDeps.find(d => skipAccumulator.includes(project.getModuleChecked(d.name)));
+  const skipReason = directLocalDeps.find(d => ctx.skipped.includes(project.getModuleChecked(d.name)));
   if (skipReason) {
     console.log(`Skipping module ${ chalk.yellow(mod.checkedName.name) } because it depends on ignored module ${ chalk.yellow(skipReason.name) }`);
-    skipAccumulator.push(mod);
+    ctx.skipped.push(mod);
     return true;
   }
 
@@ -271,152 +276,157 @@ function isIgnored(skipAccumulator: LocalModule[], directLocalDeps: ModuleDep[],
 }
 
 
-export async function releaseCommand() {
-  let args = getArgs();
-  let project = getProject();
+async function updateDependencyRanges(ctx: ReleaseContext, mod: LocalModule, localDeps: ModuleDep[], repo: git.Repository) {
+  const modName = mod.checkedName.name;
+  const project = getProject();
 
-  if (args.subCommand !== "release") {
-    throw new Error("Expected release");
-  }
+  let updateRanges: ModuleDep[] = [];
+  for (let localDep of localDeps) {
+    let depMod = project.getModuleChecked(localDep.name);
+    let depName = depMod.checkedName.name;
+    if (ctx.updated.has(depName)) {
+      let value = ctx.updated.get(depName)!;
 
-  const updatedModules = new Map<string, { from: string; to: string }>();
-  const modulesToIgnore = await getModulesToIgnore();
-  if (!modulesToIgnore) {
-    return;
-  }
+      if (!semver.satisfies(value.to, localDep.range)) {
+        let newRange = await prompts({
+          type: "select",
+          name: "value",
+          message: `${ modName } depends on ${ depName }@${ chalk.yellow(localDep.range) }, but ${ depName }@${ chalk.red(value.to) } no longer matches this requirement. We need to change semver range`,
+          choices: [
+            {
+              title: `${ modName } is compatible with all versions of ${ depName } in range ${ localDep.range }`,
+              value: `${ localDep.range } || ^${ value.to }`,
+              description: `${ localDep.range } || ^${ value.to }`
+            },
+            {
+              title: `${ modName } is compatible only with versions starting from ${ value.to }`,
+              value: `^${ value.to }`,
+              description: `^${ value.to }`
+            }
+          ]
+        }, { onCancel });
 
-  await walkAllLocalModules(async mod => {
-    const localDeps = getDirectLocalDeps(mod);
-    if (!mod.useNpm || isIgnored(modulesToIgnore, localDeps, mod)) {
-      return WalkerAction.Continue;
-    }
-
-    let manifest = getManifestReader().readPackageManifest(mod.path);
-    if (!manifest) {
-      return WalkerAction.Continue;
-    }
-
-    let modName = mod.checkedName.name;
-
-    let repo = await openRepo(mod.path);
-    if (!repo) {
-      console.log(`Skipping module ${ modName }: not a git repository`);
-      return WalkerAction.Continue;
-    }
-
-    let updateRanges: ModuleDep[] = [];
-    for (let localDep of localDeps) {
-      let depMod = project.getModuleChecked(localDep.name);
-      let depName = depMod.checkedName.name;
-      if (updatedModules.has(depName)) {
-        let value = updatedModules.get(depName)!;
-
-        if (!semver.satisfies(value.to, localDep.range)) {
-          let newRange = await prompts({
-            type: "select",
-            name: "value",
-            message: `${ modName } depends on ${ depName }@${ chalk.yellow(localDep.range) }, but ${ depName }@${ chalk.red(value.to) } no longer matches this requirement. We need to change semver range`,
-            choices: [
-              {
-                title: `${ modName } is compatible with all versions of ${ depName } in range ${ localDep.range }`,
-                value: `${ localDep.range } || ^${ value.to }`,
-                description: `${ localDep.range } || ^${ value.to }`
-              },
-              {
-                title: `${ modName } is compatible only with versions starting from ${ value.to }`,
-                value: `^${ value.to }`,
-                description: `^${ value.to }`
-              }
-            ]
-          }, { onCancel });
-
-          updateRanges.push({
-            name: depName,
-            range: newRange.value,
-            type: localDep.type
-          });
-        }
+        updateRanges.push({
+          name: depName,
+          range: newRange.value,
+          type: localDep.type
+        });
       }
     }
+  }
 
-    await installDeps(mod, updateRanges.filter(x => x.type === DepType.Production), DepType.Production);
-    await installDeps(mod, updateRanges.filter(x => x.type === DepType.Dev), DepType.Dev);
-    await installDeps(mod, updateRanges.filter(x => x.type === DepType.Peer), DepType.Peer);
+  await installDeps(mod, updateRanges.filter(x => x.type === DepType.Production), DepType.Production);
+  await installDeps(mod, updateRanges.filter(x => x.type === DepType.Dev), DepType.Dev);
+  await installDeps(mod, updateRanges.filter(x => x.type === DepType.Peer), DepType.Peer);
 
-    if (updateRanges.length && project.useLockFiles) {
+  if (updateRanges.length && project.useLockFiles) {
+    await generateLockFile(mod.path);
+  }
+
+  if (await hasUncommittedChanges(repo)) {
+    await stageAllAndCommit(mod, "chore: update dependencies");
+  }
+}
+
+
+async function releaseNewVersion(ctx: ReleaseContext, mod: LocalModule, localDeps: ModuleDep[], repo: git.Repository) {
+  const modName = mod.checkedName.name;
+  const project = getProject();
+  const manifest = getManifestReader().readPackageManifest(mod.path);
+
+  let versionCommits = await getCommitsSinceLatestVersion(repo);
+  let newCommitCount = versionCommits.newCommits.length;
+  if (newCommitCount > 0) {
+    let currentVersion = manifest.version;
+
+    let commits = getShortCommitsOverview(versionCommits.newCommits);
+    let newVersion = await prompts({
+      type: "select",
+      name: "value",
+      message: `Module ${ chalk.yellow(modName) } has ${ newCommitCount } new ${ pluralize("commit", newCommitCount) } since latest version commit:\n${ commits }\nPick a new version for this module (currently ${ currentVersion })`,
+      choices: [
+        {
+          title: "patch",
+          value: semver.inc(currentVersion, "patch") || "",
+          description: semver.inc(currentVersion, "patch") || ""
+        },
+        {
+          title: "minor",
+          value: semver.inc(currentVersion, "minor") || "",
+          description: semver.inc(currentVersion, "minor") || ""
+        },
+        {
+          title: "major",
+          value: semver.inc(currentVersion, "major") || "",
+          description: semver.inc(currentVersion, "major") || ""
+        },
+        {
+          title: "custom",
+          value: "custom",
+          description: "Enter new version manually"
+        }
+      ]
+    }, { onCancel });
+
+    if (newVersion.value === "custom") {
+      newVersion = await prompts({
+        type: "text",
+        name: "value",
+        message: `Enter a new version for module ${ modName } (currently ${ currentVersion })`,
+        validate: (value: string) => {
+          value = value.trim();
+
+          if (!semver.valid(value)) {
+            return "Should be a valid semver version";
+          } else if (value === currentVersion) {
+            return "Should not be equal to the current version";
+          } else {
+            return true;
+          }
+        }
+      }, { onCancel });
+    }
+
+    setPackageVersion(mod.path, newVersion.value);
+    if (project.useLockFiles) {
       await generateLockFile(mod.path);
     }
 
     if (await hasUncommittedChanges(repo)) {
-      await stageAllAndCommit(mod, "chore: update dependencies");
+      const msg = "v" + newVersion.value;
+      await stageAllAndCommit(mod, msg, msg);
     }
 
-    // todo: check if current version in package.json does not match version in version commit
-    let versionCommits = await getCommitsSinceLatestVersion(repo);
-    let newCommitCount = versionCommits.newCommits.length;
-    if (newCommitCount > 0) {
-      let currentVersion = manifest.version;
+    ctx.updated.set(modName, { from: currentVersion, to: newVersion.value });
+  }
+}
 
-      let commits = getShortCommitsOverview(versionCommits.newCommits);
-      let newVersion = await prompts({
-        type: "select",
-        name: "value",
-        message: `Module ${ chalk.yellow(modName) } has ${ newCommitCount } new ${ pluralize("commit", newCommitCount) } since latest version commit:\n${ commits }\nPick a new version for this module (currently ${ currentVersion })`,
-        choices: [
-          {
-            title: "patch",
-            value: semver.inc(currentVersion, "patch") || "",
-            description: semver.inc(currentVersion, "patch") || ""
-          },
-          {
-            title: "minor",
-            value: semver.inc(currentVersion, "minor") || "",
-            description: semver.inc(currentVersion, "minor") || ""
-          },
-          {
-            title: "major",
-            value: semver.inc(currentVersion, "major") || "",
-            description: semver.inc(currentVersion, "major") || ""
-          },
-          {
-            title: "custom",
-            value: "custom",
-            description: "Enter new version manually"
-          }
-        ]
-      }, { onCancel });
 
-      if (newVersion.value === "custom") {
-        newVersion = await prompts({
-          type: "text",
-          name: "value",
-          message: `Enter a new version for module ${ modName } (currently ${ currentVersion })`,
-          validate: (value: string) => {
-            value = value.trim();
+export async function releaseCommand() {
+  const modulesToSkip = await getModulesToSkip();
+  if (!modulesToSkip) {
+    return;
+  }
 
-            if (!semver.valid(value)) {
-              return "Should be a valid semver version";
-            } else if (value === currentVersion) {
-              return "Should not be equal to the current version";
-            } else {
-              return true;
-            }
-          }
-        }, { onCancel });
-      }
+  const ctx: ReleaseContext = {
+    updated: new Map(),
+    skipped: modulesToSkip
+  };
 
-      setPackageVersion(mod.path, newVersion.value);
-      if (project.useLockFiles) {
-        await generateLockFile(mod.path);
-      }
-
-      if (await hasUncommittedChanges(repo)) {
-        const msg = "v" + newVersion.value;
-        await stageAllAndCommit(mod, msg, msg);
-      }
-
-      updatedModules.set(modName, { from: currentVersion, to: newVersion.value });
+  await walkAllLocalModules(async mod => {
+    const localDeps = getDirectLocalDeps(mod);
+    if (!mod.useNpm || shouldBeSkipped(ctx, localDeps, mod)) {
+      return WalkerAction.Continue;
     }
+
+    let repo = await openRepo(mod.path);
+    if (!repo) {
+      return WalkerAction.Continue;
+    }
+
+    await updateDependencyRanges(ctx, mod, localDeps, repo);
+
+    await releaseNewVersion(ctx, mod, localDeps, repo);
 
     return WalkerAction.Continue;
   });
