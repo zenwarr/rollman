@@ -10,6 +10,7 @@ import { getProject } from "../project";
 import { generateLockFile } from "lockfile-generator";
 import { LocalModule } from "../local-module";
 import { getNpmExecutable, runCommand } from "../process";
+import * as path from "path";
 
 
 interface ReleaseContext {
@@ -425,7 +426,27 @@ async function releaseNewVersion(ctx: ReleaseContext, mod: LocalModule, localDep
 }
 
 
+function ensureDependenciesInstalled() {
+  const project = getProject();
+  if (!project.options.useLockFiles) {
+    return true;
+  }
+
+  const modulesDir = path.join(project.rootDir, "node_modules");
+  if (!fs.existsSync(modulesDir)) {
+    console.error("It looks like you have not installed dependencies for your workspace root. Lockfile generation is going to fail. Run `yarn install` or `npm ci` before releasing.");
+    return;
+  }
+
+  return true;
+}
+
+
 export async function releaseCommand() {
+  if (!ensureDependenciesInstalled()) {
+    return;
+  }
+
   const modulesToSkip = await getModulesToSkip();
   if (!modulesToSkip) {
     return;
