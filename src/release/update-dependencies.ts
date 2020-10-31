@@ -74,8 +74,6 @@ export async function updateDependencies(ctx: ReleaseContext, mod: LocalModule, 
     const depManifest = getManifestReader().readPackageManifest(dep.mod.path);
     const depVersion = depManifest.version;
 
-    console.log("dep version: ", depVersion);
-
     if (!semver.satisfies(depVersion, dep.range)) {
       const newRange = await askForRange(mod, dep, depVersion);
 
