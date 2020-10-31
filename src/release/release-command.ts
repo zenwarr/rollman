@@ -319,8 +319,10 @@ async function updateDependencyRanges(ctx: ReleaseContext, mod: LocalModule, loc
   await installDeps(mod, updateRanges.filter(x => x.type === DepType.Dev), DepType.Dev);
   await installDeps(mod, updateRanges.filter(x => x.type === DepType.Peer), DepType.Peer);
 
-  if (updateRanges.length && project.useLockFiles) {
-    await generateLockFile(mod.path);
+  if (project.options.useLockFiles) {
+    if (updateRanges.length || project.options.alwaysUpdateLockFiles) {
+      await generateLockFile(mod.path);
+    }
   }
 
   if (await hasUncommittedChanges(repo)) {
@@ -407,13 +409,13 @@ async function releaseNewVersion(ctx: ReleaseContext, mod: LocalModule, localDep
     }
 
     setPackageVersion(mod.path, newVersion.value);
-    if (project.useLockFiles) {
+    if (project.options.useLockFiles) {
       await generateLockFile(mod.path);
     }
 
     if (await hasUncommittedChanges(repo)) {
       const msg = "v" + newVersion.value;
-      await stageAllAndCommit(mod, msg, project.useGitTags ? msg : undefined);
+      await stageAllAndCommit(mod, msg, project.options.useGitTags ? msg : undefined);
     }
 
     ctx.updated.set(modName, { from: currentVersion, to: newVersion.value });
