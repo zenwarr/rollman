@@ -14,7 +14,7 @@ async function runLifecycleScript(scriptName: string, dir: string): Promise<bool
   }
 
   try {
-    await runCommand(getYarnExecutable(), [ "run", scriptName ], {
+    await runCommand(getYarnExecutable(), [ "run", "--silent", scriptName ], {
       cwd: dir
     });
     return true;

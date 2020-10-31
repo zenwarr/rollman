@@ -135,7 +135,7 @@ export async function stageAllAndCommit(mod: LocalModule, message: string, tag?:
     cwd: mod.path
   });
 
-  await runCommand("git", [ "commit", "-m", message ], {
+  await runCommand("git", [ "commit", "-q", "-m", message ], {
     cwd: mod.path
   });
 
