@@ -185,7 +185,7 @@ function getShortCommitsOverview(commits: git.Commit[]): string {
 
 
 function onCancel() {
-  throw new Error("Cancelled");
+  process.exit(1);
 }
 
 
