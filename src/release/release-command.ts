@@ -9,7 +9,7 @@ import { getManifestReader } from "../manifest-reader";
 import { getProject } from "../project";
 import { generateLockFile } from "lockfile-generator";
 import { LocalModule } from "../local-module";
-import { getYarnExecutable, runCommand } from "../process";
+import { getNpmExecutable, runCommand } from "../process";
 
 
 interface ReleaseContext {
@@ -144,7 +144,7 @@ async function installDeps(into: LocalModule, deps: ModuleDep[], type: DepType):
     args.push(saveFlag);
   }
 
-  await runCommand(getYarnExecutable(), [ "workspace", into.checkedName.name, "add", ...args ], {
+  await runCommand(getNpmExecutable(), [ "workspace", into.checkedName.name, "add", ...args ], {
     cwd: project.rootDir
   });
 }
@@ -329,6 +329,18 @@ async function updateDependencyRanges(ctx: ReleaseContext, mod: LocalModule, loc
 }
 
 
+async function runLifecycleScript(scriptName: string, dir: string): Promise<boolean> {
+  try {
+    await runCommand(getNpmExecutable(), [ "run", scriptName, "--if-present" ], {
+      cwd: dir
+    });
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+
 async function releaseNewVersion(ctx: ReleaseContext, mod: LocalModule, localDeps: ModuleDep[], repo: git.Repository) {
   const modName = mod.checkedName.name;
   const project = getProject();
@@ -420,6 +432,11 @@ export async function releaseCommand() {
     skipped: modulesToSkip
   };
 
+  if (!await runLifecycleScript("prerelease", getProject().rootDir)) {
+    console.error(`Prerelease script failed in workspace root, aborting`);
+    return;
+  }
+
   await walkAllLocalModules(async mod => {
     const localDeps = getDirectLocalDeps(mod);
     if (!mod.useNpm || shouldBeSkipped(ctx, localDeps, mod)) {
@@ -429,6 +446,15 @@ export async function releaseCommand() {
     let repo = await openRepo(mod.path);
     if (!repo) {
       return WalkerAction.Continue;
+    }
+
+    if (!await runLifecycleScript("prerelease", mod.path)) {
+      console.error(`Prerelease script failed for module ${ chalk.yellow(mod.checkedName.name) }, aborting`);
+      return WalkerAction.Stop;
+    }
+
+    if (await hasUncommittedChanges(repo)) {
+      await stageAllAndCommit(mod, "chore: prerelease");
     }
 
     await updateDependencyRanges(ctx, mod, localDeps, repo);
