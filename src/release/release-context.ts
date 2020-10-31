@@ -4,7 +4,6 @@ import { openRepo } from "./git";
 
 
 export class ReleaseContext {
-  public updated = new Map<LocalModule, { from: string; to: string }>();
   public skipped: LocalModule[] = [];
   private repos = new Map<LocalModule, git.Repository | null>();
 

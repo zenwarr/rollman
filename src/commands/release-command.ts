@@ -2,7 +2,7 @@ import { walkModules, WalkerAction, getDirectDeps } from "../dependencies";
 import { ensureDependenciesInstalled } from "../release/ensure-dependencies-installed";
 import { ReleaseContext } from "../release/release-context";
 import { getModulesToSkip, shouldBeSkipped } from "../release/skip-modules";
-import { updateDependencies } from "../release/upgrade-ranges";
+import { updateDependencies } from "../release/update-dependencies";
 import { runModulePrerelease, runRootPrerelease } from "../release/lifecycle";
 import { ensureReleaseBranches } from "../release/ensure-branches";
 import { releaseModule } from "../release/release-module";

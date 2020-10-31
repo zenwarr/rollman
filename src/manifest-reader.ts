@@ -38,7 +38,7 @@ export class ManifestReader {
   }
 
   public invalidate(dirPath: string) {
-    this._metadataCache.delete(dirPath);
+    this._metadataCache.delete(this.getPackageManifestPath(dirPath));
   }
 
   private _metadataCache = new Map<string, object | undefined>();

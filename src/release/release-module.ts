@@ -119,7 +119,5 @@ export async function releaseModule(ctx: ReleaseContext, mod: LocalModule) {
       const msg = "v" + newVersion;
       await stageAllAndCommit(mod, msg, project.options.useGitTags ? msg : undefined);
     }
-
-    ctx.updated.set(mod, { from: versionBeforeRelease, to: newVersion });
   }
 }
