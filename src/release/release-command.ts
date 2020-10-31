@@ -279,6 +279,8 @@ function shouldBeSkipped(ctx: ReleaseContext, directLocalDeps: ModuleDep[], mod:
 async function updateDependencyRanges(ctx: ReleaseContext, mod: LocalModule, localDeps: ModuleDep[], repo: git.Repository) {
   const modName = mod.checkedName.name;
   const project = getProject();
+  const manifest = getManifestReader().readPackageManifest(mod.path);
+  const alwaysUpdateLockFiles = manifest.rollman?.alwaysUpdateLockFiles ?? getProject().options.alwaysUpdateLockFiles;
 
   let updateRanges: ModuleDep[] = [];
   for (let localDep of localDeps) {
@@ -320,7 +322,7 @@ async function updateDependencyRanges(ctx: ReleaseContext, mod: LocalModule, loc
   await installDeps(mod, updateRanges.filter(x => x.type === DepType.Peer), DepType.Peer);
 
   if (project.options.useLockFiles) {
-    if (updateRanges.length || project.options.alwaysUpdateLockFiles) {
+    if (updateRanges.length || alwaysUpdateLockFiles) {
       await generateLockFile(mod.path);
     }
   }
