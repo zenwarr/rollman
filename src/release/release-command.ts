@@ -123,17 +123,17 @@ async function installDeps(into: LocalModule, deps: ModuleDep[], type: DepType):
 
   let saveFlag: string;
   switch (type) {
-  case DepType.Dev:
-    saveFlag = "--dev";
-    break;
+    case DepType.Dev:
+      saveFlag = "--dev";
+      break;
 
-  case DepType.Production:
-    saveFlag = "";
-    break;
+    case DepType.Production:
+      saveFlag = "";
+      break;
 
-  case DepType.Peer:
-    saveFlag = "--peer";
-    break;
+    case DepType.Peer:
+      saveFlag = "--peer";
+      break;
   }
   if (saveFlag !== "") {
     args.push(saveFlag);
@@ -185,14 +185,14 @@ async function ensureReleaseBranch(mod: LocalModule, repo: git.Repository): Prom
   const manifest = getManifestReader().readPackageManifest(mod.path);
   const releaseBranchesParam = manifest?.rollman?.releaseBranches;
   if (releaseBranchesParam && (!Array.isArray(releaseBranchesParam) || !releaseBranchesParam.every(x => typeof x === "string"))) {
-    throw new Error(`Invalid rollman.releaseBranch parameter in module ${mod.checkedName.name}: array of strings expected`);
+    throw new Error(`Invalid rollman.releaseBranch parameter in module ${ mod.checkedName.name }: array of strings expected`);
   }
 
   const releaseBranches: string[] = releaseBranchesParam ?? [ DEFAULT_RELEASE_BRANCH ];
 
-  const currentBranch = (await repo.getCurrentBranch()).name();
+  const currentBranch = (await repo.getCurrentBranch()).name().replace(/^refs\/heads\//, "");
   if (!releaseBranches.includes(currentBranch)) {
-    console.error(`Module ${mod.checkedName.name} is on branch ${currentBranch}, but releases are not allowed on this branch`);
+    console.error(`Module ${ mod.checkedName.name } is on branch ${ currentBranch }, but releases are not allowed on this branch`);
     return false;
   }
 
@@ -257,7 +257,7 @@ function isIgnored(skipAccumulator: LocalModule[], directLocalDeps: ModuleDep[],
 
   const skipReason = directLocalDeps.find(d => skipAccumulator.includes(project.getModuleChecked(d.name)));
   if (skipReason) {
-    console.log(`Skipping module ${ mod.checkedName.name } because it depends on ignore module ${skipReason.name}`);
+    console.log(`Skipping module ${ mod.checkedName.name } because it depends on ignore module ${ skipReason.name }`);
     skipAccumulator.push(mod);
     return true;
   }
