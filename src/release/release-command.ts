@@ -178,6 +178,11 @@ function getShortCommitsOverview(commits: git.Commit[]): string {
 }
 
 
+function onCancel() {
+  throw new Error("Cancelled");
+}
+
+
 const DEFAULT_RELEASE_BRANCH = "master";
 
 
@@ -221,18 +226,18 @@ async function getModulesToIgnore(): Promise<false | LocalModule[]> {
       const reply = await prompts({
         type: "select",
         name: "value",
-        message: `Module ${ mod.checkedName.name } has uncommitted changes. Do you want to continue?`,
+        message: `Module ${ chalk.yellow(mod.checkedName.name) } has uncommitted changes. Do you want to continue?`,
         choices: [
           {
-            title: "No, exit and do nothing",
+            title: "No, abort release process and do nothing",
             value: "exit"
           },
           {
-            title: "Ignore, do not release the module and all modules that depend on it",
+            title: "Continue, but do not release the module and all modules that depend on it",
             value: "ignore"
           }
         ]
-      });
+      }, { onCancel });
       if (reply.value === "exit") {
         result = false;
         return WalkerAction.Stop;
@@ -257,7 +262,7 @@ function isIgnored(skipAccumulator: LocalModule[], directLocalDeps: ModuleDep[],
 
   const skipReason = directLocalDeps.find(d => skipAccumulator.includes(project.getModuleChecked(d.name)));
   if (skipReason) {
-    console.log(`Skipping module ${ mod.checkedName.name } because it depends on ignore module ${ skipReason.name }`);
+    console.log(`Skipping module ${ chalk.yellow(mod.checkedName.name) } because it depends on ignored module ${ chalk.yellow(skipReason.name) }`);
     skipAccumulator.push(mod);
     return true;
   }
@@ -272,10 +277,6 @@ export async function releaseCommand() {
 
   if (args.subCommand !== "release") {
     throw new Error("Expected release");
-  }
-
-  function onCancel() {
-    throw new Error("Cancelled");
   }
 
   const updatedModules = new Map<string, { from: string; to: string }>();
