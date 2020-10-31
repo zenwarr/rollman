@@ -9,7 +9,7 @@ import { getManifestReader } from "./manifest-reader";
 
 export interface ProjectOptions {
   useLockFiles: boolean;
-  alwaysUpdateLockFiles: boolean;
+  alwaysUpdateLockFile: boolean;
   useGitTags: boolean;
 }
 
@@ -73,16 +73,16 @@ export class Project {
       throw new Error(`rollman.useGitTags should be a boolean in ${ projectDir }/package.json`);
     }
 
-    let alwaysUpdateLockFiles = manifest.rollman?.alwaysUpdateLockFiles ?? false;
-    if (typeof alwaysUpdateLockFiles !== "boolean") {
-      throw new Error(`rollman.alwaysUpdateLockFiles should be a boolean in ${ projectDir }/package.json`);
+    let alwaysUpdateLockFile = manifest.rollman?.alwaysUpdateLockFile ?? false;
+    if (typeof alwaysUpdateLockFile !== "boolean") {
+      throw new Error(`rollman.alwaysUpdateLockFile should be a boolean in ${ projectDir }/package.json`);
     }
 
     let modules = [ ...packagePaths.values() ].map(packagePath => LocalModule.readFromPackage(packagePath));
     return new Project(projectDir, modules, {
       useLockFiles,
       useGitTags,
-      alwaysUpdateLockFiles
+      alwaysUpdateLockFile
     });
   }
 

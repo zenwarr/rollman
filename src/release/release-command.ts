@@ -280,7 +280,7 @@ async function updateDependencyRanges(ctx: ReleaseContext, mod: LocalModule, loc
   const modName = mod.checkedName.name;
   const project = getProject();
   const manifest = getManifestReader().readPackageManifest(mod.path);
-  const alwaysUpdateLockFiles = manifest.rollman?.alwaysUpdateLockFiles ?? getProject().options.alwaysUpdateLockFiles;
+  const alwaysUpdateLockFile = manifest.rollman?.alwaysUpdateLockFile ?? getProject().options.alwaysUpdateLockFile;
 
   let updateRanges: ModuleDep[] = [];
   for (let localDep of localDeps) {
@@ -322,7 +322,7 @@ async function updateDependencyRanges(ctx: ReleaseContext, mod: LocalModule, loc
   await installDeps(mod, updateRanges.filter(x => x.type === DepType.Peer), DepType.Peer);
 
   if (project.options.useLockFiles) {
-    if (updateRanges.length || alwaysUpdateLockFiles) {
+    if (updateRanges.length || alwaysUpdateLockFile) {
       await generateLockFile(mod.path);
     }
   }
