@@ -14,7 +14,7 @@ import * as path from "path";
 
 
 interface ReleaseContext {
-  updated: Map<string, { from: string, to: string }>;
+  updated: Map<string, { from: string; to: string }>;
   skipped: LocalModule[];
 }
 
@@ -129,17 +129,17 @@ async function installDeps(into: LocalModule, deps: ModuleDep[], type: DepType):
 
   let saveFlag: string;
   switch (type) {
-    case DepType.Dev:
-      saveFlag = "--dev";
-      break;
+  case DepType.Dev:
+    saveFlag = "--dev";
+    break;
 
-    case DepType.Production:
-      saveFlag = "";
-      break;
+  case DepType.Production:
+    saveFlag = "";
+    break;
 
-    case DepType.Peer:
-      saveFlag = "--peer";
-      break;
+  case DepType.Peer:
+    saveFlag = "--peer";
+    break;
   }
   if (saveFlag !== "") {
     args.push(saveFlag);
@@ -458,7 +458,7 @@ export async function releaseCommand() {
   };
 
   if (!await runLifecycleScript("prerelease", getProject().rootDir)) {
-    console.error(`Prerelease script failed in workspace root, aborting`);
+    console.error("Prerelease script failed in workspace root, aborting");
     return;
   }
 
