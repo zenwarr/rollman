@@ -364,6 +364,10 @@ async function releaseNewVersion(ctx: ReleaseContext, mod: LocalModule, localDep
           title: "custom",
           value: "custom",
           description: "Enter new version manually"
+        },
+        {
+          title: "Ignore, do not release this module and all modules that depend on it",
+          value: "skip"
         }
       ]
     }, { onCancel });
@@ -385,6 +389,9 @@ async function releaseNewVersion(ctx: ReleaseContext, mod: LocalModule, localDep
           }
         }
       }, { onCancel });
+    } else if (newVersion.value === "skip") {
+      ctx.skipped.push(mod);
+      return;
     }
 
     setPackageVersion(mod.path, newVersion.value);
