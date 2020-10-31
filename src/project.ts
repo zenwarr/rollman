@@ -8,7 +8,7 @@ import { getManifestReader } from "./manifest-reader";
 
 
 export class Project {
-  public constructor(private _rootDir: string, private _modules: LocalModule[], private _useLockFiles: boolean) {
+  public constructor(private _rootDir: string, private _modules: LocalModule[], private _useLockFiles: boolean, private _useGitTags: boolean) {
   }
 
   public get modules() {
@@ -17,6 +17,10 @@ export class Project {
 
   public get useLockFiles() {
     return this._useLockFiles;
+  }
+
+  public get useGitTags() {
+    return this._useGitTags;
   }
 
   public get rootDir() {
@@ -61,8 +65,13 @@ export class Project {
       throw new Error(`rollman.useLockFiles should be a boolean in ${ projectDir }/package.json`);
     }
 
+    let useGitTags = manifest.rollman?.useGitTags ?? true;
+    if (typeof useGitTags !== "boolean") {
+      throw new Error(`rollman.useGitTags should be a boolean in ${ projectDir }/package.json`);
+    }
+
     let modules = [ ...packagePaths.values() ].map(packagePath => LocalModule.readFromPackage(packagePath));
-    return new Project(projectDir, modules, useLockFiles);
+    return new Project(projectDir, modules, useLockFiles, useGitTags);
   }
 
 

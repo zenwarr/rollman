@@ -401,7 +401,7 @@ async function releaseNewVersion(ctx: ReleaseContext, mod: LocalModule, localDep
 
     if (await hasUncommittedChanges(repo)) {
       const msg = "v" + newVersion.value;
-      await stageAllAndCommit(mod, msg, msg);
+      await stageAllAndCommit(mod, msg, project.useGitTags ? msg : undefined);
     }
 
     ctx.updated.set(modName, { from: currentVersion, to: newVersion.value });
