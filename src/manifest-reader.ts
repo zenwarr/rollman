@@ -41,14 +41,10 @@ export class ManifestReader {
     this._metadataCache.delete(dirPath);
   }
 
-  public static init() {
-    ServiceLocator.instance.initialize("manifestReader", new ManifestReader());
-  }
-
   private _metadataCache = new Map<string, object | undefined>();
 }
 
 
 export function getManifestReader() {
-  return ServiceLocator.instance.get<ManifestReader>("manifestReader");
+  return ServiceLocator.instance.get<ManifestReader>("manifestReader", () => new ManifestReader());
 }

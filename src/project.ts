@@ -43,11 +43,6 @@ export class Project {
     return mod;
   }
 
-  public getModuleByPath(modulePath: string): LocalModule | null {
-    modulePath = fs.realpathSync(modulePath);
-    return this._modules.find(mod => fs.realpathSync(mod.path) === modulePath) || null;
-  }
-
   public static loadProject(startDir: string): Project {
     let projectDir = this.findProjectDir(startDir);
     let manifest = getManifestReader().readPackageManifest(projectDir);
@@ -78,7 +73,7 @@ export class Project {
       throw new Error(`rollman.alwaysUpdateLockFile should be a boolean in ${ projectDir }/package.json`);
     }
 
-    let modules = [ ...packagePaths.values() ].map(packagePath => LocalModule.readFromPackage(packagePath));
+    let modules = [ ...packagePaths.values() ].map(packagePath => LocalModule.createFromPackage(packagePath));
     return new Project(projectDir, modules, {
       useLockFiles,
       useGitTags,
@@ -121,5 +116,3 @@ function isWorkspaceEnabled(manifestPath: string) {
 export function getProject() {
   return ServiceLocator.instance.get<Project>("project");
 }
-
-

@@ -1,12 +1,12 @@
 import * as columnify from "columnify";
-import { walkAllLocalModules } from "../deps/dry-dependency-tree";
+import { walkModules } from "../dependencies";
 import { getManifestReader } from "../manifest-reader";
 
 
 export async function listModulesCommand() {
   let data: any[] = [];
 
-  await walkAllLocalModules(async module => {
+  await walkModules(async module => {
     data.push({
       npmName: module.name ? module.name.name : "<no name>",
       path: module.path,

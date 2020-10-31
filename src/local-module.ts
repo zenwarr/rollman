@@ -16,10 +16,6 @@ export interface LocalModuleConfig {
 
 
 export class LocalModule {
-  public get config() {
-    return this._config;
-  }
-
   public get name() {
     return this._config.name;
   }
@@ -46,7 +42,7 @@ export class LocalModule {
   }
 
 
-  public static readFromPackage(packagePath: string): LocalModule {
+  public static createFromPackage(packagePath: string): LocalModule {
     let manifest = getManifestReader().readPackageManifest(packagePath);
     if (!manifest) {
       return new LocalModule({

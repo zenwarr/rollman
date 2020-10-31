@@ -7,17 +7,18 @@ export class ServiceLocator {
     this._services.set(name, service);
   }
 
-  public get<T>(name: string): T {
-    const service = this._services.get(name);
+  public get<T>(name: string, creator?: () => T): T {
+    let service = this._services.get(name);
     if (!service) {
+      if (creator) {
+        service = creator();
+        this.initialize(name, service);
+        return service as T;
+      }
       throw new Error(`Service "${ name }" not found in service locator`);
     }
 
     return service as T;
-  }
-
-  public getIfExists<T>(name: string): T | undefined {
-    return this._services.get(name) as T | undefined;
   }
 
   public static get instance() {

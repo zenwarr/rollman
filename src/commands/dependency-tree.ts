@@ -1,7 +1,6 @@
 import { LocalModule } from "../local-module";
-import { getDirectLocalDeps, walkAllLocalModules } from "../deps/dry-dependency-tree";
+import { getDirectDeps, walkModules } from "../dependencies";
 import * as columnify from "columnify";
-import { getProject } from "../project";
 
 
 export async function dependencyTreeCommand() {
@@ -9,7 +8,6 @@ export async function dependencyTreeCommand() {
     return leaf.name ? leaf.name.name : `<no name> (${ leaf.path })`;
   }
 
-  const project = getProject();
   let output: { name: string; "direct deps": string }[] = [];
 
   async function printModuleTree(leaf: LocalModule) {
@@ -17,7 +15,7 @@ export async function dependencyTreeCommand() {
       return;
     }
 
-    let deps = getDirectLocalDeps(leaf).map(x => getName(project.getModuleChecked(x.name)));
+    let deps = getDirectDeps(leaf).map(x => x.mod.checkedName.name);
     let depsLine = deps.length ? `${ deps.join(", ") }` : "";
 
     output.push({
@@ -26,7 +24,7 @@ export async function dependencyTreeCommand() {
     });
   }
 
-  await walkAllLocalModules(printModuleTree);
+  await walkModules(printModuleTree);
 
   console.log(columnify(output, {
     columnSplitter: " | "

@@ -20,7 +20,7 @@ export class ArgumentsManager {
     return this._args;
   }
 
-  protected constructor() {
+  public constructor() {
     let argparser = new argparse.ArgumentParser({
       addHelp: true
     });
@@ -39,10 +39,9 @@ export class ArgumentsManager {
       dest: "subCommand"
     });
 
-    subparsers.addParser("list-modules", { help: "List all modules loaded from the configuration files" });
-    subparsers.addParser("dependency-tree", { help: "Show local modules dependency tree" });
-
-    subparsers.addParser("release", { help: "Release management" });
+    subparsers.addParser("list", { help: "List all local modules" });
+    subparsers.addParser("tree", { help: "Show local modules dependency tree" });
+    subparsers.addParser("release", { help: "Release modules" });
 
     let args: Arguments = argparser.parseArgs();
     this._args = args;
@@ -56,15 +55,9 @@ export class ArgumentsManager {
 
 
   private readonly _args: Arguments;
-
-
-  public static init() {
-    const parser = new ArgumentsManager();
-    ServiceLocator.instance.initialize("args", parser);
-  }
 }
 
 
 export function getArgs() {
-  return ServiceLocator.instance.get<ArgumentsManager>("args").args;
+  return ServiceLocator.instance.get<ArgumentsManager>("args", () => new ArgumentsManager()).args;
 }
