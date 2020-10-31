@@ -65,6 +65,9 @@ export enum DepType {
 }
 
 
+/**
+ * Walks all modules in project in topological order (dependency is always visited first)
+ */
 export async function walkModules(walker: ModuleWalker): Promise<void> {
   const walked = new Set<LocalModule>();
 

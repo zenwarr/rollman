@@ -70,7 +70,7 @@ async function askForRange(mod: LocalModule, dep: ModuleDep, newDepVersion: stri
 }
 
 
-export async function upgradeDependencyRanges(ctx: ReleaseContext, mod: LocalModule, localDeps: ModuleDep[]) {
+export async function updateDependencies(ctx: ReleaseContext, mod: LocalModule, localDeps: ModuleDep[]) {
   let rangesToUpdate: ModuleDep[] = [];
   for (let dep of localDeps) {
     let updateInfo = ctx.updated.get(dep.mod);

@@ -2,7 +2,7 @@ import { walkModules, WalkerAction, getDirectDeps } from "../dependencies";
 import { ensureDependenciesInstalled } from "../release/ensure-dependencies-installed";
 import { ReleaseContext } from "../release/release-context";
 import { getModulesToSkip, shouldBeSkipped } from "../release/skip-modules";
-import { upgradeDependencyRanges } from "../release/upgrade-ranges";
+import { updateDependencies } from "../release/upgrade-ranges";
 import { runModulePrerelease, runRootPrerelease } from "../release/lifecycle";
 import { ensureReleaseBranches } from "../release/ensure-branches";
 import { releaseModule } from "../release/release-module";
@@ -44,7 +44,7 @@ export async function releaseCommand() {
       return WalkerAction.Stop;
     }
 
-    await upgradeDependencyRanges(ctx, mod, localDeps);
+    await updateDependencies(ctx, mod, localDeps);
 
     await releaseModule(ctx, mod);
 
