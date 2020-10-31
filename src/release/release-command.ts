@@ -9,7 +9,7 @@ import { getManifestReader } from "../manifest-reader";
 import { getProject } from "../project";
 import { generateLockFile } from "lockfile-generator";
 import { LocalModule } from "../local-module";
-import { getNpmExecutable, runCommand } from "../process";
+import { getYarnExecutable, runCommand } from "../process";
 import * as path from "path";
 
 
@@ -129,23 +129,23 @@ async function installDeps(into: LocalModule, deps: ModuleDep[], type: DepType):
 
   let saveFlag: string;
   switch (type) {
-  case DepType.Dev:
-    saveFlag = "--dev";
-    break;
+    case DepType.Dev:
+      saveFlag = "--dev";
+      break;
 
-  case DepType.Production:
-    saveFlag = "";
-    break;
+    case DepType.Production:
+      saveFlag = "";
+      break;
 
-  case DepType.Peer:
-    saveFlag = "--peer";
-    break;
+    case DepType.Peer:
+      saveFlag = "--peer";
+      break;
   }
   if (saveFlag !== "") {
     args.push(saveFlag);
   }
 
-  await runCommand(getNpmExecutable(), [ "workspace", into.checkedName.name, "add", ...args ], {
+  await runCommand(getYarnExecutable(), [ "workspace", into.checkedName.name, "add", ...args ], {
     cwd: project.rootDir
   });
 }
@@ -335,8 +335,13 @@ async function updateDependencyRanges(ctx: ReleaseContext, mod: LocalModule, loc
 
 
 async function runLifecycleScript(scriptName: string, dir: string): Promise<boolean> {
+  const manifest = getManifestReader().readPackageManifest(dir);
+  if (!manifest.scripts || !(scriptName in manifest.scripts)) {
+    return true;
+  }
+
   try {
-    await runCommand(getNpmExecutable(), [ "run", scriptName, "--if-present" ], {
+    await runCommand(getYarnExecutable(), [ "run", scriptName ], {
       cwd: dir
     });
     return true;

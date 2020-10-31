@@ -154,8 +154,8 @@ function logProcessExecuteError(exitCode: number, command: string, args: null | 
 }
 
 
-export function getNpmExecutable(): string {
-  return process.platform === "win32" ? "npm.cmd" : "npm";
+export function getYarnExecutable(): string {
+  return process.platform === "win32" ? "yarn.cmd" : "yarn";
 }
 
 
