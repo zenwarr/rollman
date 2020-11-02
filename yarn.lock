@@ -1539,10 +1539,10 @@ locate-path@^2.0.0:
     p-locate "^2.0.0"
     path-exists "^3.0.0"
 
-lockfile-generator@^1.1.7:
-  version "1.1.7"
-  resolved "https://registry.npmjs.org/lockfile-generator/-/lockfile-generator-1.1.7.tgz#4896c3d97640cabe4be76b32a34c26a0cb64dbf0"
-  integrity sha512-LxszhQF8mEqwweRpCdAQUgS2HYd0ZCP4ajpU5ocNCNKVPrYZ5tWwLGIpJoC1YA/99CS2HE2e72lqA4gYN4P9Tw==
+lockfile-generator@^1.1.10:
+  version "1.1.10"
+  resolved "https://registry.yarnpkg.com/lockfile-generator/-/lockfile-generator-1.1.10.tgz#63b9eebacf1d3c45dfcb2699f4ba52485b1fa81d"
+  integrity sha512-6FTo3CJcABWB8gYxZUQoeVD9BHkUdpbqTx9TgG3tklLxvB/XYMbIvZTPGvf2JLZpF4zyqjXIvL1zMD8+5MLqgw==
   dependencies:
     "@yarnpkg/lockfile" "^1.1.0"
     argparse "^2.0.1"
