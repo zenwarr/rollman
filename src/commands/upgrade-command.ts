@@ -1,9 +1,10 @@
 import { getProject } from "../project";
 import { getArgs } from "../arguments";
 import { LocalModule } from "../local-module";
-import { DepType, getDirectPackageDeps } from "../dependencies";
-import assert = require("assert");
+import { DepType, getDirectPackageDeps, walkModules } from "../dependencies";
 import { getYarnExecutable, runCommand } from "../process";
+import assert = require("assert");
+import * as chalk from "chalk";
 
 
 export async function upgradeCommand() {
@@ -12,41 +13,43 @@ export async function upgradeCommand() {
 
   assert(args.subCommand === "upgrade");
 
-  const jobs: { mod: LocalModule; pkg: string; type: DepType }[] = [];
-  for (const pkg of args.packages) {
-    for (const mod of project.modules) {
+  const jobs: { mod: LocalModule; packages: string[]; type: DepType }[] = [];
+
+  await walkModules(mod => {
+    for (const pkg of args.packages) {
       const depType = getPackageDepType(mod, pkg);
       if (depType != null) {
-        jobs.push({ mod, pkg, type: depType });
+        const existing = jobs.find(job => job.mod === mod && job.type === depType);
+        if (existing) {
+          existing.packages.push(pkg);
+        } else {
+          jobs.push({ mod, packages: [ pkg ], type: depType });
+        }
       }
     }
-  }
+  });
 
-  while (jobs.length) {
-    const head = jobs.shift()!;
+  if (!args.dryRun) {
+    for (const job of jobs) {
+      const modName = job.mod.checkedName.name;
+      const flag = getDepFlag(job.type);
 
-    const packages = [ head.pkg ];
-    for (let q = 0; q < jobs.length; ++q) {
-      if (jobs[q].mod === head.mod && jobs[q].type === head.type) {
-        packages.push(jobs[q].pkg);
-        jobs.splice(q, 1);
-        --q;
+      const args = [ "workspace", modName, "add", flag, ...job.packages ].filter(x => x != null) as string[];
+
+      try {
+        await runCommand(getYarnExecutable(), args, {
+          cwd: project.rootDir
+        });
+      } catch (error) {
+        console.error(`Failed to update ${ job.packages.join(", ") } in ${ modName }: ${ error.message }`);
       }
     }
 
-    const modName = head.mod.checkedName.name;
-    const flag = getDepFlag(head.type);
-
-    const args = [ "workspace", modName, "add", flag, ...packages ].filter(x => x != null) as string[];
-
-    try {
-      await runCommand(getYarnExecutable(), args, {
-        cwd: project.rootDir
-      });
-    } catch (error) {
-      console.error(`Failed to update ${ packages.join(", ") } in ${ modName }: ${ error.message }`);
-    }
+    // just to add empty line before report
+    console.log();
   }
+
+  console.log(jobs.map(job => chalk.green(`${ job.mod.checkedName.name } (${ getDepDesc(job.type) }): ${ job.packages.join(", ") }`)).join("\n"));
 }
 
 
@@ -75,5 +78,19 @@ function getDepFlag(depType: DepType): string | undefined {
 
   case DepType.Dev:
     return "--dev";
+  }
+}
+
+
+function getDepDesc(depType: DepType): string {
+  switch (depType) {
+  case DepType.Production:
+    return "prod";
+
+  case DepType.Peer:
+    return "peer";
+
+  case DepType.Dev:
+    return "dev";
   }
 }

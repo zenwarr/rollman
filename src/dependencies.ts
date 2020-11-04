@@ -9,7 +9,7 @@ export enum WalkerAction {
 }
 
 
-export type ModuleWalker = (module: LocalModule) => Promise<WalkerAction | void>;
+export type ModuleWalker = (module: LocalModule) => Promise<WalkerAction | void> | WalkerAction | void;
 
 
 export interface PackageDep {

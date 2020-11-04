@@ -15,6 +15,7 @@ export type Arguments = {
 } | {
   subCommand: "upgrade";
   packages: string[];
+  dryRun: boolean;
 });
 
 
@@ -50,6 +51,12 @@ export class ArgumentsManager {
     upgradeParser.addArgument("packages", {
       help: "Package name to upgrade to latest version in all workspaces",
       nargs: "+"
+    });
+    upgradeParser.addArgument("--dry-run", {
+      help: "Only show what is going to be upgraded",
+      action: "storeTrue",
+      dest: "dryRun",
+      defaultValue: false
     });
 
     let args: Arguments = argparser.parseArgs();
