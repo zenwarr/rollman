@@ -48,7 +48,7 @@
     "columnify": "~1.5.4",
     "fs-extra": "~9.0.1",
     "glob": "^7.1.6",
-    "lockfile-generator": "^1.1.7",
+    "lockfile-generator": "^1.1.10",
     "nodegit": "^0.27.0",
     "pluralize": "^8.0.0",
     "prompts": "~2.3.2",
