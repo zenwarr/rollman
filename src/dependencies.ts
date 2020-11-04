@@ -12,6 +12,13 @@ export enum WalkerAction {
 export type ModuleWalker = (module: LocalModule) => Promise<WalkerAction | void>;
 
 
+export interface PackageDep {
+  name: string;
+  range: string;
+  type: DepType;
+}
+
+
 export interface ModuleDep {
   mod: LocalModule;
   range: string;
@@ -19,30 +26,34 @@ export interface ModuleDep {
 }
 
 
-export function getDirectDeps(mod: LocalModule, includeDev: boolean = true): ModuleDep[] {
+export function getDirectModuleDeps(mod: LocalModule, includeDev: boolean = true): ModuleDep[] {
   const project = getProject();
 
+  return getDirectPackageDeps(mod, includeDev).map(dep => ({
+    mod: project.getModule(dep.name),
+    range: dep.range,
+    type: dep.type
+  })).filter(dep => dep.mod != null) as ModuleDep[];
+}
+
+
+export function getDirectPackageDeps(mod: LocalModule, includeDev: boolean): PackageDep[] {
   let pkg = getManifestReader().readPackageManifest(mod.path);
   if (!pkg) {
     return [];
   }
 
-  let result: ModuleDep[] = [];
+  let result: PackageDep[] = [];
 
   function addDeps(obj: { [name: string]: string } | undefined, type: DepType) {
     if (!obj) {
       return;
     }
 
-    for (let [ key, value ] of Object.entries(obj)) {
-      const localModule = project.getModule(key);
-      if (!localModule) {
-        continue;
-      }
-
+    for (let [ name, range ] of Object.entries(obj)) {
       result.push({
-        mod: localModule,
-        range: value,
+        name,
+        range,
         type
       });
     }
@@ -85,7 +96,7 @@ export async function walkModules(walker: ModuleWalker): Promise<void> {
         throw new Error(`Recursive dependency: ${ dep.name }, required by ${ parents.join(" -> ") }`);
       }
 
-      const action = await walkModule(dep, getDirectDeps(dep).map(x => x.mod), [ ...parents, mod ]);
+      const action = await walkModule(dep, getDirectModuleDeps(dep).map(x => x.mod), [ ...parents, mod ]);
       if (action === WalkerAction.Stop) {
         return WalkerAction.Stop;
       }
@@ -97,7 +108,7 @@ export async function walkModules(walker: ModuleWalker): Promise<void> {
   };
 
   for (let module of getProject().modules) {
-    const action = await walkModule(module, getDirectDeps(module).map(x => x.mod), []);
+    const action = await walkModule(module, getDirectModuleDeps(module).map(x => x.mod), []);
     if (action === WalkerAction.Stop) {
       return;
     }

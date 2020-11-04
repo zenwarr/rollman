@@ -1,4 +1,4 @@
-import { walkModules, WalkerAction, getDirectDeps } from "../dependencies";
+import { walkModules, WalkerAction, getDirectModuleDeps } from "../dependencies";
 import { ensureDependenciesInstalled } from "../release/ensure-dependencies-installed";
 import { ReleaseContext } from "../release/release-context";
 import { getModulesToSkip, shouldBeSkipped } from "../release/skip-modules";
@@ -30,7 +30,7 @@ export async function releaseCommand() {
   }
 
   await walkModules(async mod => {
-    const localDeps = getDirectDeps(mod);
+    const localDeps = getDirectModuleDeps(mod);
     if (!mod.useNpm || shouldBeSkipped(ctx, localDeps, mod)) {
       ctx.skipped.push(mod);
       return WalkerAction.Continue;

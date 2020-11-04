@@ -4,6 +4,7 @@ import { dependencyTreeCommand } from "./commands/dependency-tree";
 import { getArgs } from "./arguments";
 import { Project } from "./project";
 import { releaseCommand } from "./commands/release-command";
+import { upgradeCommand } from "./commands/upgrade-command";
 
 
 async function asyncStart(): Promise<void> {
@@ -14,7 +15,8 @@ async function asyncStart(): Promise<void> {
   const COMMANDS: { [name: string]: () => Promise<void> | void } = {
     list: listModulesCommand,
     tree: dependencyTreeCommand,
-    release: releaseCommand
+    release: releaseCommand,
+    upgrade: upgradeCommand
   };
 
   const command = COMMANDS[args.subCommand];

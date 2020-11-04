@@ -1,5 +1,5 @@
 import { LocalModule } from "../local-module";
-import { getDirectDeps, walkModules } from "../dependencies";
+import { getDirectModuleDeps, walkModules } from "../dependencies";
 import * as columnify from "columnify";
 
 
@@ -15,7 +15,7 @@ export async function dependencyTreeCommand() {
       return;
     }
 
-    let deps = getDirectDeps(leaf).map(x => x.mod.checkedName.name);
+    let deps = getDirectModuleDeps(leaf).map(x => x.mod.checkedName.name);
     let depsLine = deps.length ? `${ deps.join(", ") }` : "";
 
     output.push({

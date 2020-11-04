@@ -6,8 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node index.js",
-    "lint": "eslint --ext .ts .",
-    "lint-fix": "eslint --fix --ext .ts ."
+    "lint": "eslint --ext .ts ."
   },
   "repository": {
     "type": "git",
