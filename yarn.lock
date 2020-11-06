@@ -1539,13 +1539,14 @@ locate-path@^2.0.0:
     p-locate "^2.0.0"
     path-exists "^3.0.0"
 
-lockfile-generator@^1.1.10:
-  version "1.1.10"
-  resolved "https://registry.yarnpkg.com/lockfile-generator/-/lockfile-generator-1.1.10.tgz#63b9eebacf1d3c45dfcb2699f4ba52485b1fa81d"
-  integrity sha512-6FTo3CJcABWB8gYxZUQoeVD9BHkUdpbqTx9TgG3tklLxvB/XYMbIvZTPGvf2JLZpF4zyqjXIvL1zMD8+5MLqgw==
+lockfile-generator@^1.1.11:
+  version "1.1.11"
+  resolved "https://registry.npmjs.org/lockfile-generator/-/lockfile-generator-1.1.11.tgz#6d7d73d7f860ffe71e46c4f3acfb8cff357cf9cc"
+  integrity sha512-fPJuWg/SigA/ekd23uCuPt7iacSXPLCPSlOlOi+np78R1Hyj+gy/WKTczDefVgfLIZAwcYLh5WWhmzkAQik41A==
   dependencies:
     "@yarnpkg/lockfile" "^1.1.0"
     argparse "^2.0.1"
+    resolve-package-path "^3.1.0"
 
 lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.19:
   version "4.17.19"
@@ -1933,6 +1934,18 @@ path-parse@^1.0.6:
   resolved "https://registry.npmjs.org/path-parse/-/path-parse-1.0.6.tgz#d62dbb5679405d72c4737ec58600e9ddcf06d24c"
   integrity sha512-GSmOT2EbHrINBf9SR7CDELwlJ8AENk3Qn7OikK4nFYAu3Ote2+JYNVvkpAEQm3/TLNEJFD/xZJjzyxg3KBWOzw==
 
+path-root-regex@^0.1.0:
+  version "0.1.2"
+  resolved "https://registry.npmjs.org/path-root-regex/-/path-root-regex-0.1.2.tgz#bfccdc8df5b12dc52c8b43ec38d18d72c04ba96d"
+  integrity sha1-v8zcjfWxLcUsi0PsONGNcsBLqW0=
+
+path-root@^0.1.1:
+  version "0.1.1"
+  resolved "https://registry.npmjs.org/path-root/-/path-root-0.1.1.tgz#9a4a6814cac1c0cd73360a95f32083c8ea4745b7"
+  integrity sha1-mkpoFMrBwM1zNgqV8yCDyOpHRbc=
+  dependencies:
+    path-root-regex "^0.1.0"
+
 path-type@^2.0.0:
   version "2.0.0"
   resolved "https://registry.npmjs.org/path-type/-/path-type-2.0.0.tgz#f012ccb8415b7096fc2daa1054c3d72389594c73"
@@ -2111,6 +2124,14 @@ resolve-from@^4.0.0:
   version "4.0.0"
   resolved "https://registry.npmjs.org/resolve-from/-/resolve-from-4.0.0.tgz#4abcd852ad32dd7baabfe9b40e00a36db5f392e6"
   integrity sha512-pb/MYmXstAkysRFx8piNI1tGFNQIFA3vkE3Gq4EuA1dF6gHp/+vgZqsCGJapvy8N3Q+4o7FwvquPJcnZ7RYy4g==
+
+resolve-package-path@^3.1.0:
+  version "3.1.0"
+  resolved "https://registry.npmjs.org/resolve-package-path/-/resolve-package-path-3.1.0.tgz#35faaa5d54a9c7dd481eb7c4b2a44410c9c763d8"
+  integrity sha512-2oC2EjWbMJwvSN6Z7DbDfJMnD8MYEouaLn5eIX0j8XwPsYCVIyY9bbnX88YHVkbr8XHqvZrYbxaLPibfTYKZMA==
+  dependencies:
+    path-root "^0.1.1"
+    resolve "^1.17.0"
 
 resolve@^1.10.0, resolve@^1.13.1, resolve@^1.17.0:
   version "1.17.0"
