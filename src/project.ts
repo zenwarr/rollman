@@ -5,12 +5,14 @@ import * as glob from "glob";
 import { ServiceLocator } from "./locator";
 import { getArgs } from "./arguments";
 import { getManifestReader } from "./manifest-reader";
+import { DEFAULT_RELEASE_BRANCH, isValidReleaseBranchesParam } from "./release/ensure-branches";
 
 
 export interface ProjectOptions {
   useLockFiles: boolean;
   alwaysUpdateLockFile: boolean;
   useGitTags: boolean;
+  releaseBranches: string[];
 }
 
 
@@ -73,11 +75,20 @@ export class Project {
       throw new Error(`rollman.alwaysUpdateLockFile should be a boolean in ${ projectDir }/package.json`);
     }
 
+    let releaseBranches = manifest.rollman?.releaseBranches;
+    if (!isValidReleaseBranchesParam(releaseBranches)) {
+      throw new Error(`Invalid "rollman.releaseBranches" param in ${ projectDir }/package.json: should be an array of strings`);
+    }
+    if (!releaseBranches) {
+      releaseBranches = [ DEFAULT_RELEASE_BRANCH ];
+    }
+
     let modules = [ ...packagePaths.values() ].map(packagePath => LocalModule.createFromPackage(packagePath));
     return new Project(projectDir, modules, {
       useLockFiles,
       useGitTags,
-      alwaysUpdateLockFile
+      alwaysUpdateLockFile,
+      releaseBranches
     });
   }
 

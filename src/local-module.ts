@@ -1,4 +1,5 @@
 import { getManifestReader } from "./manifest-reader";
+import { isValidReleaseBranchesParam } from "./release/ensure-branches";
 
 
 export interface ModuleNpmName {
@@ -12,6 +13,7 @@ export interface LocalModuleConfig {
   path: string;
   name: ModuleNpmName | undefined;
   useNpm: boolean;
+  releaseBranches?: string[];
 }
 
 
@@ -36,6 +38,10 @@ export class LocalModule {
     return this._config.useNpm;
   }
 
+  public get config() {
+    return this._config;
+  }
+
 
   public constructor(private _config: LocalModuleConfig) {
 
@@ -51,10 +57,16 @@ export class LocalModule {
         useNpm: false
       });
     } else {
+      const releaseBranches = manifest.rollman?.releaseBranches;
+      if (!isValidReleaseBranchesParam(releaseBranches)) {
+        throw new Error(`Invalid "rollman.releaseBranches" param in ${ packagePath }/package.json: should be an array of strings`);
+      }
+
       return new LocalModule({
         path: packagePath,
         name: npmNameFromPackageName(manifest.name),
-        useNpm: true
+        useNpm: true,
+        releaseBranches
       });
     }
   }
