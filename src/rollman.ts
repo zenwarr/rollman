@@ -5,6 +5,7 @@ import { getArgs } from "./arguments";
 import { Project } from "./project";
 import { releaseCommand } from "./commands/release-command";
 import { upgradeCommand } from "./commands/upgrade-command";
+import { eachCommand } from "./commands/each-command";
 
 
 async function asyncStart(): Promise<void> {
@@ -16,7 +17,8 @@ async function asyncStart(): Promise<void> {
     list: listModulesCommand,
     tree: dependencyTreeCommand,
     release: releaseCommand,
-    upgrade: upgradeCommand
+    upgrade: upgradeCommand,
+    each: eachCommand
   };
 
   const command = COMMANDS[args.subCommand];

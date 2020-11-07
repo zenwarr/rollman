@@ -16,6 +16,9 @@ export type Arguments = {
   subCommand: "upgrade";
   packages: string[];
   dryRun: boolean;
+} | {
+  subCommand: "each";
+  args: string[];
 });
 
 
@@ -47,6 +50,12 @@ export class ArgumentsManager {
     subparsers.addParser("tree", { help: "Show local modules dependency tree" });
     subparsers.addParser("release", { help: "Release modules" });
 
+    const eachParser = subparsers.addParser("each", { help: "Execute yarn with given parameters in each module" });
+    eachParser.addArgument("args", {
+      help: "yarn arguments",
+      nargs: argparse.Const.REMAINDER
+    });
+
     const upgradeParser = subparsers.addParser("upgrade", { help: "Upgrades package in all workspaces to the latest version" });
     upgradeParser.addArgument("packages", {
       help: "Package name to upgrade to latest version in all workspaces",
@@ -61,6 +70,10 @@ export class ArgumentsManager {
 
     let args: Arguments = argparser.parseArgs();
     this._args = args;
+
+    if (this._args.subCommand === "each" && this._args.args.length < 1) {
+      throw new Error("Expected one or more arguments for \"each\" command");
+    }
 
     if (args.config) {
       if (!path.isAbsolute(args.config)) {
