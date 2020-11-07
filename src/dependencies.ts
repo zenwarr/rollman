@@ -1,6 +1,6 @@
 import { LocalModule } from "./local-module";
 import { getProject } from "./project";
-import { getManifestReader } from "./manifest-reader";
+import { getManifestManager } from "./manifest-manager";
 
 
 export enum WalkerAction {
@@ -38,7 +38,7 @@ export function getDirectModuleDeps(mod: LocalModule, includeDev: boolean = true
 
 
 export function getDirectPackageDeps(mod: LocalModule, includeDev: boolean): PackageDep[] {
-  let pkg = getManifestReader().readPackageManifest(mod.path);
+  let pkg = getManifestManager().readPackageManifest(mod.path);
   if (!pkg) {
     return [];
   }

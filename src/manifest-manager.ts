@@ -3,7 +3,7 @@ import * as path from "path";
 import { ServiceLocator } from "./locator";
 
 
-export class ManifestReader {
+export class ManifestManager {
   public getPackageManifestPath(modPath: string): string {
     return path.join(modPath, "package.json");
   }
@@ -37,6 +37,13 @@ export class ManifestReader {
     return metadata;
   }
 
+  public writePackageManifest(dir: string, data: object): void {
+    const manifestPath = this.getPackageManifestPath(dir);
+
+    fs.writeFileSync(manifestPath, JSON.stringify(data, null, 2) + "\n", "utf-8");
+    this.invalidate(dir);
+  }
+
   public invalidate(dirPath: string) {
     this._metadataCache.delete(this.getPackageManifestPath(dirPath));
   }
@@ -45,6 +52,6 @@ export class ManifestReader {
 }
 
 
-export function getManifestReader() {
-  return ServiceLocator.instance.get<ManifestReader>("manifestReader", () => new ManifestReader());
+export function getManifestManager() {
+  return ServiceLocator.instance.get<ManifestManager>("manifestManager", () => new ManifestManager());
 }

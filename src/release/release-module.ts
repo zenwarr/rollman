@@ -1,4 +1,4 @@
-import { getManifestReader } from "../manifest-reader";
+import { getManifestManager } from "../manifest-manager";
 import * as fs from "fs-extra";
 import { cancelRelease, ReleaseContext } from "./release-context";
 import { LocalModule } from "../local-module";
@@ -18,15 +18,18 @@ import { generateLockFile } from "lockfile-generator";
 
 
 function setPackageVersion(dir: string, newVersion: string): void {
-  let manifestReader = getManifestReader();
+  let manifestManager = getManifestManager();
 
-  let manifest = manifestReader.readPackageManifest(dir);
-  let manifestPath = manifestReader.getPackageManifestPath(dir);
-  fs.writeFileSync(manifestPath, JSON.stringify({
+  let manifest = manifestManager.readPackageManifest(dir);
+  if (manifest.version === newVersion) {
+    // avoid making whitespace-only changes
+    return;
+  }
+
+  manifestManager.writePackageManifest(dir, {
     ...manifest,
     version: newVersion
-  }, undefined, 2), "utf-8");
-  manifestReader.invalidate(dir);
+  });
 }
 
 
@@ -95,7 +98,7 @@ async function askForNewVersion(ctx: ReleaseContext, mod: LocalModule, currentVe
  */
 export async function releaseModule(ctx: ReleaseContext, mod: LocalModule) {
   const project = getProject();
-  const versionBeforeRelease = getManifestReader().readPackageManifest(mod.path).version;
+  const versionBeforeRelease = getManifestManager().readPackageManifest(mod.path).version;
 
   const repo = await ctx.getRepo(mod);
   if (!repo) {

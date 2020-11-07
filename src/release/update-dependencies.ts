@@ -3,7 +3,7 @@ import { LocalModule } from "../local-module";
 import { DepType, ModuleDep } from "../dependencies";
 import { getProject } from "../project";
 import { cancelRelease, ReleaseContext } from "./release-context";
-import { getManifestReader } from "../manifest-reader";
+import { getManifestManager } from "../manifest-manager";
 import * as semver from "semver";
 import * as prompts from "prompts";
 import * as chalk from "chalk";
@@ -24,8 +24,13 @@ function getDepKey(type: DepType) {
 
 
 function setDependencyRanges(source: LocalModule, deps: ModuleDep[]) {
-  const manifestReader = getManifestReader();
-  const manifest = manifestReader.readPackageManifest(source.path);
+  // if (!deps.length) {
+  //   // avoid reading and writing back same JSON: it can cause commits that have only whitespace changes
+  //   return;
+  // }
+  //
+  const manifestManager = getManifestManager();
+  const manifest = manifestManager.readPackageManifest(source.path);
 
   for (const dep of deps) {
     const depKey = getDepKey(dep.type);
@@ -36,8 +41,7 @@ function setDependencyRanges(source: LocalModule, deps: ModuleDep[]) {
     manifest[depKey][dep.mod.checkedName.name] = dep.range;
   }
 
-  fs.writeFileSync(manifestReader.getPackageManifestPath(source.path), JSON.stringify(manifest, null, 2), "utf-8");
-  manifestReader.invalidate(source.path);
+  manifestManager.writePackageManifest(source.path, manifest);
 }
 
 
@@ -71,7 +75,7 @@ async function askForRange(mod: LocalModule, dep: ModuleDep, currentDepVersion: 
 export async function updateDependencies(ctx: ReleaseContext, mod: LocalModule, localDeps: ModuleDep[]) {
   let rangesToUpdate: ModuleDep[] = [];
   for (let dep of localDeps) {
-    const depManifest = getManifestReader().readPackageManifest(dep.mod.path);
+    const depManifest = getManifestManager().readPackageManifest(dep.mod.path);
     const depVersion = depManifest.version;
 
     if (!semver.satisfies(depVersion, dep.range)) {
@@ -89,7 +93,7 @@ export async function updateDependencies(ctx: ReleaseContext, mod: LocalModule, 
 
   const project = getProject();
   if (project.options.useLockFiles) {
-    const manifest = getManifestReader().readPackageManifest(mod.path);
+    const manifest = getManifestManager().readPackageManifest(mod.path);
     const alwaysUpdateLockFile = manifest.rollman?.alwaysUpdateLockFile ?? getProject().options.alwaysUpdateLockFile;
 
     if (rangesToUpdate.length || alwaysUpdateLockFile) {

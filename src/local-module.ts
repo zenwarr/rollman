@@ -1,4 +1,4 @@
-import { getManifestReader } from "./manifest-reader";
+import { getManifestManager } from "./manifest-manager";
 import { isValidReleaseBranchesParam } from "./release/ensure-branches";
 
 
@@ -49,7 +49,7 @@ export class LocalModule {
 
 
   public static createFromPackage(packagePath: string): LocalModule {
-    let manifest = getManifestReader().readPackageManifest(packagePath);
+    let manifest = getManifestManager().readPackageManifest(packagePath);
     if (!manifest) {
       return new LocalModule({
         path: packagePath,

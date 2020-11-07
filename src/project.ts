@@ -4,7 +4,7 @@ import * as fs from "fs-extra";
 import * as glob from "glob";
 import { ServiceLocator } from "./locator";
 import { getArgs } from "./arguments";
-import { getManifestReader } from "./manifest-reader";
+import { getManifestManager } from "./manifest-manager";
 import { DEFAULT_RELEASE_BRANCH, isValidReleaseBranchesParam } from "./release/ensure-branches";
 
 
@@ -47,7 +47,7 @@ export class Project {
 
   public static loadProject(startDir: string): Project {
     let projectDir = this.findProjectDir(startDir);
-    let manifest = getManifestReader().readPackageManifest(projectDir);
+    let manifest = getManifestManager().readPackageManifest(projectDir);
     let patterns: string[] = typeof manifest.workspaces.packages === "string" ? [ manifest.workspaces.packages ] : manifest.workspaces.packages;
 
     let packagePaths = new Set<string>();
@@ -119,7 +119,7 @@ export class Project {
 
 
 function isWorkspaceEnabled(manifestPath: string) {
-  let manifest = getManifestReader().readPackageManifest(manifestPath);
+  let manifest = getManifestManager().readPackageManifest(manifestPath);
   return !!(manifest && manifest.workspaces);
 }
 

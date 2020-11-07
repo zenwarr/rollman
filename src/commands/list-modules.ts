@@ -1,6 +1,6 @@
 import * as columnify from "columnify";
 import { walkModules } from "../dependencies";
-import { getManifestReader } from "../manifest-reader";
+import { getManifestManager } from "../manifest-manager";
 
 
 export async function listModulesCommand() {
@@ -11,7 +11,7 @@ export async function listModulesCommand() {
       npmName: module.name ? module.name.name : "<no name>",
       path: module.path,
       useNpm: module.useNpm,
-      version: module.path ? getManifestReader().readPackageManifest(module.path)?.version : ""
+      version: module.path ? getManifestManager().readPackageManifest(module.path)?.version : ""
     });
   });
 

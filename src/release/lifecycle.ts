@@ -1,4 +1,4 @@
-import { getManifestReader } from "../manifest-reader";
+import { getManifestManager } from "../manifest-manager";
 import { getYarnExecutable, runCommand } from "../process";
 import { getProject } from "../project";
 import * as chalk from "chalk";
@@ -8,7 +8,7 @@ import { ReleaseContext } from "./release-context";
 
 
 async function runLifecycleScript(scriptName: string, dir: string): Promise<boolean> {
-  const manifest = getManifestReader().readPackageManifest(dir);
+  const manifest = getManifestManager().readPackageManifest(dir);
   if (!manifest.scripts || !(scriptName in manifest.scripts)) {
     return true;
   }
