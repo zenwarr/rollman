@@ -24,11 +24,11 @@ function getDepKey(type: DepType) {
 
 
 function setDependencyRanges(source: LocalModule, deps: ModuleDep[]) {
-  // if (!deps.length) {
-  //   // avoid reading and writing back same JSON: it can cause commits that have only whitespace changes
-  //   return;
-  // }
-  //
+  if (!deps.length) {
+    // avoid reading and writing back same JSON: it can cause commits that have only whitespace changes
+    return;
+  }
+
   const manifestManager = getManifestManager();
   const manifest = manifestManager.readPackageManifest(source.path);
 
