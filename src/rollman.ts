@@ -3,9 +3,9 @@ import { listModulesCommand } from "./commands/list-modules";
 import { dependencyTreeCommand } from "./commands/dependency-tree";
 import { getArgs } from "./arguments";
 import { Project } from "./project";
-import { releaseCommand } from "./commands/release-command";
-import { upgradeCommand } from "./commands/upgrade-command";
-import { eachCommand } from "./commands/each-command";
+import { releaseCommand } from "./commands/release";
+import { upgradeCommand } from "./commands/upgrade";
+import { eachCommand } from "./commands/each";
 
 
 async function asyncStart(): Promise<void> {
