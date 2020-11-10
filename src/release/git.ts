@@ -145,3 +145,8 @@ export async function stageAllAndCommit(mod: LocalModule, message: string, tag?:
     });
   }
 }
+
+
+export async function getCurrentBranchName(repo: git.Repository): Promise<string> {
+  return (await repo.getCurrentBranch()).name().replace(/^refs\/heads\//, "");
+}

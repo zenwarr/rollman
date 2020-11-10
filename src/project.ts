@@ -6,6 +6,7 @@ import { ServiceLocator } from "./locator";
 import { getArgs } from "./arguments";
 import { getManifestManager } from "./manifest-manager";
 import { DEFAULT_RELEASE_BRANCH, isValidReleaseBranchesParam } from "./release/ensure-branches";
+import { isEmptyOrArrayOfStrings } from "./utils";
 
 
 export interface ProjectOptions {
@@ -13,6 +14,8 @@ export interface ProjectOptions {
   alwaysUpdateLockFile: boolean;
   useGitTags: boolean;
   releaseBranches: string[];
+  repositories?: string[];
+  cloneDir?: string;
 }
 
 
@@ -83,12 +86,28 @@ export class Project {
       releaseBranches = [ DEFAULT_RELEASE_BRANCH ];
     }
 
+    let repositories = manifest.rollman?.repositories;
+    if (!isEmptyOrArrayOfStrings(repositories)) {
+      throw new Error(`Invalid "rollman.repositories" param in ${ projectDir }/package.json: should be an array of strings`);
+    }
+
+    let cloneDir = manifest.rollman?.cloneDir;
+    if (cloneDir == null) {
+      if (repositories != null && repositories.length > 0) {
+        throw new Error(`"rollman.cloneDir" not defined in ${ projectDir }/package.json: required when "rollman.repositories" is not empty`);
+      }
+    } else if (typeof cloneDir !== "string") {
+      throw new Error(`Invalid "rollman.cloneDir" param in ${ projectDir }/package.json: should be a string`);
+    }
+
     let modules = [ ...packagePaths.values() ].map(packagePath => LocalModule.createFromPackage(packagePath));
     return new Project(projectDir, modules, {
       useLockFiles,
       useGitTags,
       alwaysUpdateLockFile,
-      releaseBranches
+      releaseBranches,
+      repositories,
+      cloneDir
     });
   }
 

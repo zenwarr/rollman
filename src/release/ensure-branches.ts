@@ -3,23 +3,21 @@ import * as git from "nodegit";
 import { walkModules } from "../dependencies";
 import { ReleaseContext } from "./release-context";
 import { getProject } from "../project";
+import { getCurrentBranchName } from "./git";
+import { isEmptyOrArrayOfStrings } from "../utils";
 
 
 export const DEFAULT_RELEASE_BRANCH = "master";
 
 
 export function isValidReleaseBranchesParam(input: unknown): input is string[] | undefined {
-  if (input == null) {
-    return true;
-  }
-
-  return Array.isArray(input) && !input.some(elem => typeof elem !== "string");
+  return isEmptyOrArrayOfStrings(input);
 }
 
 
 async function ensureReleaseBranch(mod: LocalModule, repo: git.Repository): Promise<boolean> {
   const allowedBranches = mod.config.releaseBranches || getProject().options.releaseBranches;
-  const currentBranch = (await repo.getCurrentBranch()).name().replace(/^refs\/heads\//, "");
+  const currentBranch = await getCurrentBranchName(repo);
 
   if (!allowedBranches.includes(currentBranch)) {
     console.error(`Module ${ mod.checkedName.name } is on branch ${ currentBranch }, but releases are not allowed on this branch`);
