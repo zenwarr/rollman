@@ -1,4 +1,6 @@
 import * as path from "path";
+import * as fs from "fs";
+import * as gitUrlParse from "git-url-parse";
 import { getProject } from "../project";
 import { getCurrentBranchName, openRepo } from "../release/git";
 import { runCommand } from "../process";
@@ -22,6 +24,12 @@ export async function cloneCommand() {
   const projectBranch = await getCurrentBranchName(projectRepo);
   for (const repoUrl of repositories) {
     assert(project.options.cloneDir, "Should be defined if repositories is not empty");
+
+    const cloneTargetDir = path.join(project.rootDir, project.options.cloneDir, gitUrlParse(repoUrl).name);
+    if (fs.existsSync(cloneTargetDir)) {
+      console.warn(`Skipping clone for repository ${ repoUrl }: target directory already exists`);
+      continue;
+    }
 
     await runCommand("git", [ "clone", repoUrl, "-b", projectBranch ], {
       cwd: path.join(project.rootDir, project.options.cloneDir)
