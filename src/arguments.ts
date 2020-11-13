@@ -13,10 +13,6 @@ export type Arguments = {
 } | {
   subCommand: "release";
 } | {
-  subCommand: "upgrade";
-  packages: string[];
-  dryRun: boolean;
-} | {
   subCommand: "each";
   args: string[];
 } | {
@@ -57,18 +53,6 @@ export class ArgumentsManager {
     eachParser.addArgument("args", {
       help: "yarn arguments",
       nargs: argparse.Const.REMAINDER
-    });
-
-    const upgradeParser = subparsers.addParser("upgrade", { help: "Upgrades package in all workspaces to the latest version" });
-    upgradeParser.addArgument("packages", {
-      help: "Package name to upgrade to latest version in all workspaces",
-      nargs: "+"
-    });
-    upgradeParser.addArgument("--dry-run", {
-      help: "Only show what is going to be upgraded",
-      action: "storeTrue",
-      dest: "dryRun",
-      defaultValue: false
     });
 
     let args: Arguments = argparser.parseArgs();

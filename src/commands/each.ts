@@ -13,7 +13,7 @@ export async function eachCommand() {
   const scriptName = args.args[0];
   if (scriptName === "--") {
     if (args.args.length < 2) {
-      throw new Error(`Not enough arguments: expected at least one after --`);
+      throw new Error("Not enough arguments: expected at least one after --");
     }
 
     await walkModules(async mod => {

@@ -1,5 +1,4 @@
 import { getManifestManager } from "../manifest-manager";
-import * as fs from "fs-extra";
 import { cancelRelease, ReleaseContext } from "./release-context";
 import { LocalModule } from "../local-module";
 import { getProject } from "../project";

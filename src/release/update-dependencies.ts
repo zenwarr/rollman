@@ -1,4 +1,3 @@
-import * as fs from "fs-extra";
 import { LocalModule } from "../local-module";
 import { DepType, ModuleDep } from "../dependencies";
 import { getProject } from "../project";
