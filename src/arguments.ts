@@ -15,8 +15,6 @@ export type Arguments = {
 } | {
   subCommand: "each";
   args: string[];
-} | {
-  subCommand: "clone";
 });
 
 
@@ -47,7 +45,6 @@ export class ArgumentsManager {
     subparsers.addParser("list", { help: "List all local modules" });
     subparsers.addParser("tree", { help: "Show local modules dependency tree" });
     subparsers.addParser("release", { help: "Release modules" });
-    subparsers.addParser("clone", { help: "Clone repositories defined in project" });
 
     const eachParser = subparsers.addParser("each", { help: "Execute yarn with given parameters in each module" });
     eachParser.addArgument("args", {
