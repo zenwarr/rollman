@@ -15,8 +15,5 @@
   },
   "exclude": [
     "declarations/**/*.*"
-  ],
-  "ts-node": {
-    "preferTsExts": true
-  }
+  ]
 }

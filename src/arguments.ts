@@ -14,6 +14,7 @@ export type Arguments = {
   subCommand: "release";
 } | {
   subCommand: "each";
+  changedOnly: boolean;
   args: string[];
 });
 
@@ -47,6 +48,12 @@ export class ArgumentsManager {
     subparsers.addParser("release", { help: "Release modules" });
 
     const eachParser = subparsers.addParser("each", { help: "Execute yarn with given parameters in each module" });
+    eachParser.addArgument("--changed", {
+      help: "Only for modules that has changed since last publish",
+      action: "storeTrue",
+      defaultValue: false,
+      dest: "changedOnly"
+    });
     eachParser.addArgument("args", {
       help: "yarn arguments",
       nargs: argparse.Const.REMAINDER
