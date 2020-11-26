@@ -7,7 +7,7 @@ import * as semver from "semver";
 import * as prompts from "prompts";
 import * as chalk from "chalk";
 import { generateLockFile } from "lockfile-generator";
-import { hasUncommittedChanges, stageAllAndCommit } from "./git";
+import { hasUncommittedChanges, stageAllAndCommit } from "../git";
 
 
 function getDepKey(type: DepType) {

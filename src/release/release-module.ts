@@ -6,9 +6,9 @@ import {
   getCommitsSinceLatestVersion,
   getShortCommitsOverview,
   hasUncommittedChanges,
-  LastVersionCommits,
+  RepositoryChangesInfo,
   stageAllAndCommit
-} from "./git";
+} from "../git";
 import * as prompts from "prompts";
 import * as chalk from "chalk";
 import * as pluralize from "pluralize";
@@ -41,7 +41,7 @@ function getSemVerChoice(type: semver.ReleaseType, currentVersion: string) {
 }
 
 
-async function askForNewVersion(ctx: ReleaseContext, mod: LocalModule, currentVersion: string, versionCommits: LastVersionCommits): Promise<string | false> {
+async function askForNewVersion(ctx: ReleaseContext, mod: LocalModule, currentVersion: string, versionCommits: RepositoryChangesInfo): Promise<string | false> {
   const modName = mod.checkedName.name;
 
   const commits = getShortCommitsOverview(versionCommits.newCommits);

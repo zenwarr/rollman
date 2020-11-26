@@ -2,7 +2,7 @@ import { getManifestManager } from "../manifest-manager";
 import { getYarnExecutable, runCommand } from "../process";
 import { getProject } from "../project";
 import * as chalk from "chalk";
-import { hasUncommittedChanges, stageAllAndCommit } from "./git";
+import { hasUncommittedChanges, stageAllAndCommit } from "../git";
 import { LocalModule } from "../local-module";
 import { ReleaseContext } from "./release-context";
 

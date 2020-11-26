@@ -30,6 +30,10 @@ export class LocalModule {
     return this._config.name;
   }
 
+  public get formattedName() {
+    return this._config.name ? this._config.name.name : this.path;
+  }
+
   public get path() {
     return this._config.path;
   }

@@ -3,7 +3,7 @@ import * as git from "nodegit";
 import { walkModules } from "../dependencies";
 import { ReleaseContext } from "./release-context";
 import { getProject } from "../project";
-import { getCurrentBranchName } from "./git";
+import { getCurrentBranchName } from "../git";
 import { isEmptyOrArrayOfStrings } from "../utils";
 
 

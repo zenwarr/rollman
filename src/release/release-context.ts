@@ -1,6 +1,6 @@
 import * as git from "nodegit";
 import { LocalModule } from "../local-module";
-import { openRepo } from "./git";
+import { openRepo } from "../git";
 
 
 export class ReleaseContext {

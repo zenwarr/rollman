@@ -15,6 +15,7 @@ export type Arguments = {
 } | {
   subCommand: "each";
   changedOnly: boolean;
+  unpublishedOnly: boolean;
   args: string[];
 });
 
@@ -49,10 +50,16 @@ export class ArgumentsManager {
 
     const eachParser = subparsers.addParser("each", { help: "Execute yarn with given parameters in each module" });
     eachParser.addArgument("--changed", {
-      help: "Only for modules that has changed since last publish",
+      help: "Only for modules that has changed since last version commit",
       action: "storeTrue",
       defaultValue: false,
       dest: "changedOnly"
+    });
+    eachParser.addArgument("--unpublished", {
+      help: "Only for modules that has changed since last publish",
+      action: "storeTrue",
+      defaultValue: false,
+      dest: "unpublishedOnly"
     });
     eachParser.addArgument("args", {
       help: "yarn arguments",

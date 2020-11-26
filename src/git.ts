@@ -1,13 +1,15 @@
 import * as git from "nodegit";
 import * as semver from "semver";
 import * as chalk from "chalk";
-import { LocalModule } from "../local-module";
-import { runCommand } from "../process";
+import { LocalModule } from "./local-module";
+import { runCommand } from "./process";
+import { WalkerAction } from "./dependencies";
+import { isVersionPublished } from "./registry";
 
 
-export interface LastVersionCommits {
+export interface RepositoryChangesInfo {
   newCommits: git.Commit[];
-  latestVersionCommit: git.Commit | undefined;
+  latestStableCommit: git.Commit | undefined;
 }
 
 
@@ -30,13 +32,22 @@ export async function openRepo(repoPath: string): Promise<git.Repository | null>
 /**
  * Checks that given commit message looks like this is version commit made by us.
  */
-function looksLikeVersionCommit(msg: string): boolean {
-  // todo: use tags instead
-  if (msg.startsWith("v")) {
-    msg = msg.slice(1);
-  }
+function looksLikeVersionCommit(commit: git.Commit): boolean {
+  return getVersionFromCommit(commit) != null;
+}
 
-  return !!semver.valid(msg);
+
+function getVersionFromCommit(commit: git.Commit): string | undefined {
+  // todo: use tags instead
+
+  let msg = formatCommitMessage(commit);
+  if (msg.startsWith("v")) {
+    return msg.slice(1);
+  } else if (semver.valid(msg)) {
+    return msg;
+  } else {
+    return undefined;
+  }
 }
 
 
@@ -52,42 +63,31 @@ function formatCommitMessage(c: git.Commit | undefined): string {
 }
 
 
-/**
- * Returns list of commits after the latest version commit in the current branch.
- */
-export async function getCommitsSinceLatestVersion(repo: git.Repository): Promise<LastVersionCommits> {
+async function walkCommits(repo: git.Repository, walker: (commit: git.Commit) => Promise<WalkerAction | void>): Promise<void> {
   let head = await repo.getHeadCommit();
 
   let historyReader = head.history();
 
-  let commits = new Promise<LastVersionCommits>((resolve, reject) => {
-    let newCommits: git.Commit[] = [];
+  new Promise<void>((resolve, reject) => {
     let isResolved = false;
 
-    historyReader.on("commit", c => {
+    historyReader.on("commit", (c: git.Commit) => {
       if (isResolved) {
         return;
       }
 
-      let message = formatCommitMessage(c);
-      if (looksLikeVersionCommit(message)) {
-        isResolved = true;
-        resolve({
-          newCommits,
-          latestVersionCommit: c
-        });
-      } else {
-        newCommits.push(c);
-      }
+      walker(c).then(result => {
+        if (result === WalkerAction.Stop) {
+          isResolved = true;
+          resolve();
+        }
+      }, reject);
     });
 
     historyReader.on("end", () => {
       if (!isResolved) {
-        resolve({
-          newCommits,
-          latestVersionCommit: undefined
-        });
         isResolved = true;
+        resolve();
       }
     });
 
@@ -95,8 +95,52 @@ export async function getCommitsSinceLatestVersion(repo: git.Repository): Promis
   });
 
   historyReader.start();
+}
 
-  return commits;
+
+/**
+ * Returns list of commits after the latest version commit in the current branch.
+ */
+export async function getCommitsSinceLatestVersion(repo: git.Repository): Promise<RepositoryChangesInfo> {
+  let latestVersionCommit: git.Commit | undefined = undefined;
+  let newCommits: git.Commit[] = [];
+
+  await walkCommits(repo, async commit => {
+    if (looksLikeVersionCommit(commit)) {
+      latestVersionCommit = commit;
+      return WalkerAction.Stop;
+    } else {
+      newCommits.push(commit);
+      return WalkerAction.Continue;
+    }
+  });
+
+  return {
+    latestStableCommit: latestVersionCommit,
+    newCommits
+  };
+}
+
+
+export async function getCommitsSinceLastPublish(mod: LocalModule, repo: git.Repository): Promise<RepositoryChangesInfo> {
+  let latestPublishedCommit: git.Commit | undefined = undefined;
+  let newCommits: git.Commit[] = [];
+
+  await walkCommits(repo, async commit => {
+    const commitVersion = getVersionFromCommit(commit);
+    if (!commitVersion || !await isVersionPublished(mod.checkedName.name, commitVersion)) {
+      newCommits.push(commit);
+      return WalkerAction.Continue;
+    }
+
+    latestPublishedCommit = commit;
+    return WalkerAction.Stop;
+  });
+
+  return {
+    latestStableCommit: latestPublishedCommit,
+    newCommits
+  };
 }
 
 
