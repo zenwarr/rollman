@@ -3,12 +3,13 @@ import * as semver from "semver";
 import * as chalk from "chalk";
 import { LocalModule } from "./local-module";
 import { runCommand } from "./process";
-import { WalkerAction } from "./dependencies";
-import { isVersionPublished } from "./registry";
+import { getDirectModuleDeps } from "./dependencies";
+import { getPublishedPackageInfo } from "./registry";
 
 
 export interface RepositoryChangesInfo {
   newCommits: git.Commit[];
+  latestStableVersion: string | undefined;
   latestStableCommit: git.Commit | undefined;
 }
 
@@ -29,32 +30,7 @@ export async function openRepo(repoPath: string): Promise<git.Repository | null>
 }
 
 
-/**
- * Checks that given commit message looks like this is version commit made by us.
- */
-function looksLikeVersionCommit(commit: git.Commit): boolean {
-  return getVersionFromCommit(commit) != null;
-}
-
-
-function getVersionFromCommit(commit: git.Commit): string | undefined {
-  // todo: use tags instead
-
-  let msg = formatCommitMessage(commit);
-  if (msg.startsWith("v")) {
-    return msg.slice(1);
-  } else if (semver.valid(msg)) {
-    return msg;
-  } else {
-    return undefined;
-  }
-}
-
-
-/**
- * Formats and cleans commit message from libgit.
- */
-function formatCommitMessage(c: git.Commit | undefined): string {
+function formatCommitMessage(c: git.Commit) {
   if (!c) {
     return "";
   }
@@ -63,38 +39,68 @@ function formatCommitMessage(c: git.Commit | undefined): string {
 }
 
 
-async function walkCommits(repo: git.Repository, walker: (commit: git.Commit) => Promise<WalkerAction | void>): Promise<void> {
+export interface TagInfo {
+  name: string;
+  commit: git.Commit;
+}
+
+
+async function getTags(repo: git.Repository): Promise<TagInfo[]> {
+  let tagNames: string[] = await git.Tag.list(repo);
+  let commits = await Promise.all(tagNames.map(tagName => repo.getReferenceCommit(tagName)));
+
+  return tagNames.map((tagName, index) => ({
+    name: tagName,
+    commit: commits[index]
+  }));
+}
+
+
+function getCommitTags(commit: git.Commit, tags: TagInfo[]): TagInfo[] {
+  return tags.filter(tag => commit.id().equal(tag.commit.id()));
+}
+
+
+function getVersionFromText(text: string): string | undefined {
+  if (text.startsWith("v")) {
+    text = text.slice(1);
+  }
+
+  return semver.valid(text) ? text : undefined;
+}
+
+
+function getVersionFromCommit(commit: git.Commit, allTags: TagInfo[]): string | undefined {
+  const commitTags = getCommitTags(commit, allTags);
+  for (const commitTag of commitTags) {
+    const version = getVersionFromText(commitTag.name);
+    if (version) {
+      return version;
+    }
+  }
+
+  return undefined;
+}
+
+
+async function listCommits(repo: git.Repository): Promise<git.Commit[]> {
   let head = await repo.getHeadCommit();
-
   let historyReader = head.history();
+  let commits: git.Commit[] = [];
 
-  new Promise<void>((resolve, reject) => {
-    let isResolved = false;
+  return new Promise<git.Commit[]>((resolve, reject) => {
+    historyReader.start();
 
     historyReader.on("commit", (c: git.Commit) => {
-      if (isResolved) {
-        return;
-      }
-
-      walker(c).then(result => {
-        if (result === WalkerAction.Stop) {
-          isResolved = true;
-          resolve();
-        }
-      }, reject);
+      commits.push(c);
     });
 
     historyReader.on("end", () => {
-      if (!isResolved) {
-        isResolved = true;
-        resolve();
-      }
+      resolve(commits);
     });
 
     historyReader.on("error", reject);
   });
-
-  historyReader.start();
 }
 
 
@@ -102,20 +108,24 @@ async function walkCommits(repo: git.Repository, walker: (commit: git.Commit) =>
  * Returns list of commits after the latest version commit in the current branch.
  */
 export async function getCommitsSinceLatestVersion(repo: git.Repository): Promise<RepositoryChangesInfo> {
-  let latestVersionCommit: git.Commit | undefined = undefined;
+  let latestVersionCommit: git.Commit | undefined;
+  let latestVersion: string | undefined;
   let newCommits: git.Commit[] = [];
+  const allTags = await getTags(repo);
 
-  await walkCommits(repo, async commit => {
-    if (looksLikeVersionCommit(commit)) {
+  for (const commit of await listCommits(repo)) {
+    const version = getVersionFromCommit(commit, allTags);
+    if (version) {
       latestVersionCommit = commit;
-      return WalkerAction.Stop;
+      latestVersion = version;
+      break;
     } else {
       newCommits.push(commit);
-      return WalkerAction.Continue;
     }
-  });
+  }
 
   return {
+    latestStableVersion: latestVersion,
     latestStableCommit: latestVersionCommit,
     newCommits
   };
@@ -123,22 +133,29 @@ export async function getCommitsSinceLatestVersion(repo: git.Repository): Promis
 
 
 export async function getCommitsSinceLastPublish(mod: LocalModule, repo: git.Repository): Promise<RepositoryChangesInfo> {
-  let latestPublishedCommit: git.Commit | undefined = undefined;
+  let latestStableVersion: string | undefined;
+  let latestStableCommit: git.Commit | undefined;
   let newCommits: git.Commit[] = [];
+  const allTags = await getTags(repo);
 
-  await walkCommits(repo, async commit => {
-    const commitVersion = getVersionFromCommit(commit);
-    if (!commitVersion || !await isVersionPublished(mod.checkedName.name, commitVersion)) {
+  const publishInfo = await getPublishedPackageInfo(mod.checkedName.name);
+
+  for (const commit of await listCommits(repo)) {
+    const commitVersion = getVersionFromCommit(commit, allTags);
+    if (!commitVersion || !publishInfo || !publishInfo.versions.includes(commitVersion)) {
       newCommits.push(commit);
-      return WalkerAction.Continue;
+    } else {
+      latestStableCommit = commit;
+      latestStableVersion = commitVersion;
+      break;
     }
+  }
 
-    latestPublishedCommit = commit;
-    return WalkerAction.Stop;
-  });
+  console.log("info", latestStableVersion, latestStableCommit);
 
   return {
-    latestStableCommit: latestPublishedCommit,
+    latestStableVersion,
+    latestStableCommit,
     newCommits
   };
 }
@@ -193,4 +210,49 @@ export async function stageAllAndCommit(mod: LocalModule, message: string, tag?:
 
 export async function getCurrentBranchName(repo: git.Repository): Promise<string> {
   return (await repo.getCurrentBranch()).name().replace(/^refs\/heads\//, "");
+}
+
+
+export function dependsOnOneOf(mod: LocalModule, mods: LocalModule[]): boolean {
+  return getDirectModuleDeps(mod, true).some(dep => mods.includes(dep.mod));
+}
+
+
+export async function changedSinceVersionCommit(mod: LocalModule): Promise<boolean> {
+  const repo = await openRepo(mod.path);
+  if (!repo) {
+    return false;
+  }
+
+  if (await hasUncommittedChanges(repo)) {
+    return true;
+  }
+
+  const newCommitsInfo = await getCommitsSinceLatestVersion(repo);
+  if (newCommitsInfo.newCommits.length) {
+    return true;
+  }
+
+  console.log(`Module ${ chalk.yellow(mod.formattedName) } has no changes since previous version commit, skipping`);
+  return false;
+}
+
+
+export async function changedSincePublish(mod: LocalModule): Promise<boolean> {
+  const repo = await openRepo(mod.path);
+  if (!repo) {
+    return false;
+  }
+
+  if (await hasUncommittedChanges(repo)) {
+    return true;
+  }
+
+  const newCommitsInfo = await getCommitsSinceLastPublish(mod, repo);
+  if (newCommitsInfo.newCommits.length) {
+    return true;
+  }
+
+  console.log(`Module ${ chalk.yellow(mod.formattedName) } has no changes since previous published version, skipping`);
+  return false;
 }

@@ -92,10 +92,7 @@ export async function updateDependencies(ctx: ReleaseContext, mod: LocalModule, 
 
   const project = getProject();
   if (project.options.useLockFiles) {
-    const manifest = getManifestManager().readPackageManifest(mod.path);
-    const alwaysUpdateLockFile = manifest.rollman?.alwaysUpdateLockFile ?? getProject().options.alwaysUpdateLockFile;
-
-    if (rangesToUpdate.length || alwaysUpdateLockFile) {
+    if (rangesToUpdate.length || mod.alwaysUpdateLockFile) {
       await generateLockFile(mod.path);
     }
   }

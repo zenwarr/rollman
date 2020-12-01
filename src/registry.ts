@@ -4,10 +4,12 @@ import { getProject } from "./project";
 
 export interface PublishedPackageInfo {
   versions: string[];
+  integrity?: string;
+  tarball?: string;
 }
 
 
-async function getPublishedPackageInfo(packageName: string): Promise<PublishedPackageInfo | undefined> {
+export async function getPublishedPackageInfo(packageName: string): Promise<PublishedPackageInfo | undefined> {
   const project = getProject();
 
   let output = await getCommandOutput(getNpmExecutable(), [ "view", "--json", packageName ], {
@@ -26,7 +28,9 @@ async function getPublishedPackageInfo(packageName: string): Promise<PublishedPa
   }
 
   return {
-    versions: parsedOutput.versions
+    versions: parsedOutput.versions,
+    integrity: parsedOutput.dist?.integrity,
+    tarball: parsedOutput.dist?.tarball
   };
 }
 

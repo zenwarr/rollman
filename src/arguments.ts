@@ -17,6 +17,8 @@ export type Arguments = {
   changedOnly: boolean;
   unpublishedOnly: boolean;
   args: string[];
+} | {
+  subCommand: "publish";
 });
 
 
@@ -65,6 +67,8 @@ export class ArgumentsManager {
       help: "yarn arguments",
       nargs: argparse.Const.REMAINDER
     });
+
+    subparsers.addParser("publish", { help: "Publish changed packages" });
 
     let args: Arguments = argparser.parseArgs();
     this._args = args;

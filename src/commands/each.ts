@@ -4,58 +4,15 @@ import { getArgs } from "../arguments";
 import { getManifestManager } from "../manifest-manager";
 import assert = require("assert");
 import { LocalModule } from "../local-module";
-import { getCommitsSinceLastPublish, getCommitsSinceLatestVersion, hasUncommittedChanges, openRepo } from "../git";
+import {
+  changedSincePublish,
+  changedSinceVersionCommit, dependsOnOneOf,
+  getCommitsSinceLastPublish,
+  getCommitsSinceLatestVersion,
+  hasUncommittedChanges,
+  openRepo
+} from "../git";
 import * as chalk from "chalk";
-
-
-async function changedSinceVersionCommit(mod: LocalModule, changed: Set<LocalModule>): Promise<boolean> {
-  const directModuleDeps = getDirectModuleDeps(mod, true);
-  if (directModuleDeps.some(dep => changed.has(dep.mod))) {
-    return true;
-  }
-
-  const repo = await openRepo(mod.path);
-  if (!repo) {
-    return false;
-  }
-
-  if (await hasUncommittedChanges(repo)) {
-    return true;
-  }
-
-  const newCommitsInfo = await getCommitsSinceLatestVersion(repo);
-  if (newCommitsInfo.newCommits.length) {
-    return true;
-  }
-
-  console.log(`Module ${ chalk.yellow(mod.formattedName) } has no changes since previous version commit, skipping`);
-  return false;
-}
-
-
-async function changedSincePublish(mod: LocalModule, changed: Set<LocalModule>): Promise<boolean> {
-  const directModuleDeps = getDirectModuleDeps(mod, true);
-  if (directModuleDeps.some(dep => changed.has(dep.mod))) {
-    return true;
-  }
-
-  const repo = await openRepo(mod.path);
-  if (!repo) {
-    return false;
-  }
-
-  if (await hasUncommittedChanges(repo)) {
-    return true;
-  }
-
-  const newCommitsInfo = await getCommitsSinceLastPublish(mod, repo);
-  if (newCommitsInfo.newCommits.length) {
-    return true;
-  }
-
-  console.log(`Module ${ chalk.yellow(mod.formattedName) } has no changes since previous published version, skipping`);
-  return false;
-}
 
 
 export async function eachCommand() {
@@ -63,20 +20,20 @@ export async function eachCommand() {
 
   assert(args.subCommand === "each");
 
-  const changedModules = new Set<LocalModule>();
+  const changedModules: LocalModule[] = [];
 
   async function shouldBeSkipped(mod: LocalModule) {
     assert(args.subCommand === "each");
 
-    if (args.changedOnly && !(await changedSinceVersionCommit(mod, changedModules))) {
+    if (args.changedOnly && !dependsOnOneOf(mod, changedModules) && !(await changedSinceVersionCommit(mod))) {
       return true;
     }
 
-    if (args.unpublishedOnly && !(await changedSincePublish(mod, changedModules))) {
+    if (args.unpublishedOnly && !dependsOnOneOf(mod, changedModules) && !(await changedSincePublish(mod))) {
       return true;
     }
 
-    changedModules.add(mod);
+    changedModules.push(mod);
 
     return false;
   }

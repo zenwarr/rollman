@@ -10,7 +10,7 @@ function getCommandTitle(command: string, args: string[], options?: child_proces
 
 export type CommandOptions = child_process.SpawnOptions & {
   silent?: boolean;
-}
+};
 
 
 export async function runCommand(command: string, args: string[], options?: CommandOptions): Promise<string> {
@@ -27,12 +27,15 @@ export async function runCommand(command: string, args: string[], options?: Comm
     } as const);
 
     let output = "";
-    proc.on("data", text => output += text);
+    proc.stdout && proc.stdout.on("data", text => output += text);
 
     proc.on("close", code => {
       if (code === 0) {
-        resolve();
+        resolve(output);
       } else {
+        if (output) {
+          console.error(output);
+        }
         reject(new Error(`Process exited with code ${ code }`));
       }
     });
@@ -44,10 +47,25 @@ export async function runCommand(command: string, args: string[], options?: Comm
 }
 
 
+export async function fork(scriptPath: string, args: string[], options?: child_process.ForkOptions): Promise<void> {
+  const child = child_process.fork(scriptPath, args, options);
+  return new Promise<void>((resolve, reject) => {
+    child.on("close", code => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`Proces exited with code ${ code }`));
+      }
+    });
+    child.on("error", reject);
+  });
+}
+
+
 export async function getCommandOutput(command: string, args: string[], options?: CommandOptions): Promise<string> {
   return runCommand(command, args, {
     stdio: "pipe",
-    ...options,
+    ...options
   });
 }
 

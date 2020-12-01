@@ -11,7 +11,8 @@
     "noImplicitThis": true,
     "strict": true,
     "declaration": true,
-    "declarationDir": "declarations"
+    "declarationDir": "declarations",
+    "noEmit": true
   },
   "exclude": [
     "declarations/**/*.*"

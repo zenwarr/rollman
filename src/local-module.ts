@@ -46,6 +46,11 @@ export class LocalModule {
     return this._config;
   }
 
+  public get alwaysUpdateLockFile(): boolean {
+    const manifest = getManifestManager().readPackageManifest(this.path);
+    return manifest.rollman?.alwaysUpdateLockFile === true;
+  }
+
 
   public constructor(private _config: LocalModuleConfig) {
 

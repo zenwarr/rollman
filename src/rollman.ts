@@ -5,6 +5,7 @@ import { getArgs } from "./arguments";
 import { Project } from "./project";
 import { releaseCommand } from "./commands/release";
 import { eachCommand } from "./commands/each";
+import { publishCommand } from "./commands/publish";
 
 
 async function asyncStart(): Promise<void> {
@@ -16,7 +17,8 @@ async function asyncStart(): Promise<void> {
     list: listModulesCommand,
     tree: dependencyTreeCommand,
     release: releaseCommand,
-    each: eachCommand
+    each: eachCommand,
+    publish: publishCommand
   };
 
   const command = COMMANDS[args.subCommand];
@@ -37,7 +39,6 @@ export function start(): void {
 
 
 process.on("SIGINT", () => {
-  console.log("sigint");
   process.exit(1);
 });
 
