@@ -93,7 +93,7 @@ export async function walkModules(walker: ModuleWalker): Promise<void> {
       }
 
       if (parents.indexOf(dep) >= 0) {
-        throw new Error(`Recursive dependency: ${ dep.name }, required by ${ parents.join(" -> ") }`);
+        throw new Error(`Recursive dependency: ${ dep.formattedName }, required by ${ parents.map(p => p.formattedName).join(" -> ") }`);
       }
 
       const action = await walkModule(dep, getDirectModuleDeps(dep).map(x => x.mod), [ ...parents, mod ]);
