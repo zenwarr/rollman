@@ -5,7 +5,7 @@ import { getProject } from "../project";
 import {
   getCommitsSinceLatestVersion,
   getShortCommitsOverview,
-  hasUncommittedChanges,
+  hasUncommittedChanges, isGitRepo,
   RepositoryChangesInfo,
   stageAllAndCommit
 } from "../git";
@@ -99,12 +99,11 @@ export async function releaseModule(ctx: ReleaseContext, mod: LocalModule) {
   const project = getProject();
   const versionBeforeRelease = getManifestManager().readPackageManifest(mod.path).version;
 
-  const repo = await ctx.getRepo(mod);
-  if (!repo) {
+  if (!await isGitRepo(mod.path)) {
     return;
   }
 
-  let versionCommits = await getCommitsSinceLatestVersion(repo);
+  let versionCommits = await getCommitsSinceLatestVersion(mod.path);
   if (versionCommits.newCommits.length > 0) {
     const newVersion = await askForNewVersion(ctx, mod, versionBeforeRelease, versionCommits);
     if (!newVersion) {
@@ -117,7 +116,7 @@ export async function releaseModule(ctx: ReleaseContext, mod: LocalModule) {
       await generateLockFile(mod.path);
     }
 
-    if (await hasUncommittedChanges(repo)) {
+    if (await hasUncommittedChanges(mod.path)) {
       const msg = "v" + newVersion;
       await stageAllAndCommit(mod, msg, project.options.useGitTags ? msg : undefined);
     }

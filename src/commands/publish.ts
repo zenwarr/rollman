@@ -1,6 +1,6 @@
 import { walkModules } from "../dependencies";
 import { LocalModule } from "../local-module";
-import { changedSincePublish, dependsOnOneOf, openRepo } from "../git";
+import { changedSincePublish, dependsOnOneOf, isGitRepo } from "../git";
 import { fork, getNpmExecutable, runCommand } from "../process";
 import { getProject } from "../project";
 import { getManifestManager } from "../manifest-manager";
@@ -15,8 +15,7 @@ async function moduleShouldBePublished(mod: LocalModule, dirtyModules: LocalModu
     return false;
   }
 
-  const repo = await openRepo(mod.path);
-  if (!repo) {
+  if (!await isGitRepo(mod.path)) {
     return false;
   }
 

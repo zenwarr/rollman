@@ -1,9 +1,8 @@
 import { LocalModule } from "../local-module";
-import * as git from "nodegit";
 import { walkModules } from "../dependencies";
 import { ReleaseContext } from "./release-context";
 import { getProject } from "../project";
-import { getCurrentBranchName } from "../git";
+import { getCurrentBranchName, isGitRepo } from "../git";
 import { isEmptyOrArrayOfStrings } from "../utils";
 
 
@@ -15,9 +14,9 @@ export function isValidReleaseBranchesParam(input: unknown): input is string[] |
 }
 
 
-async function ensureReleaseBranch(mod: LocalModule, repo: git.Repository): Promise<boolean> {
+async function ensureReleaseBranch(mod: LocalModule): Promise<boolean> {
   const allowedBranches = mod.config.releaseBranches || getProject().options.releaseBranches;
-  const currentBranch = await getCurrentBranchName(repo);
+  const currentBranch = await getCurrentBranchName(mod);
 
   if (!allowedBranches.includes(currentBranch)) {
     console.error(`Module ${ mod.checkedName.name } is on branch ${ currentBranch }, but releases are not allowed on this branch`);
@@ -39,12 +38,11 @@ export async function ensureReleaseBranches(ctx: ReleaseContext): Promise<boolea
       return;
     }
 
-    const repo = await ctx.getRepo(mod);
-    if (!repo) {
+    if (!await isGitRepo(mod.path)) {
       return;
     }
 
-    if (!await ensureReleaseBranch(mod, repo)) {
+    if (!await ensureReleaseBranch(mod)) {
       result = false;
     }
   });

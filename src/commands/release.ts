@@ -6,6 +6,7 @@ import { updateDependencies } from "../release/update-dependencies";
 import { runModulePrerelease, runRootPrerelease } from "../release/lifecycle";
 import { ensureReleaseBranches } from "../release/ensure-branches";
 import { releaseModule } from "../release/release-module";
+import { isGitRepo } from "../git";
 
 
 export async function releaseCommand() {
@@ -36,7 +37,7 @@ export async function releaseCommand() {
       return WalkerAction.Continue;
     }
 
-    if (!await ctx.getRepo(mod)) {
+    if (!await isGitRepo(mod.path)) {
       return WalkerAction.Continue;
     }
 

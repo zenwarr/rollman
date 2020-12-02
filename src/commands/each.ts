@@ -1,4 +1,4 @@
-import { getDirectModuleDeps, WalkerAction, walkModules } from "../dependencies";
+import { walkModules } from "../dependencies";
 import { getYarnExecutable, runCommand } from "../process";
 import { getArgs } from "../arguments";
 import { getManifestManager } from "../manifest-manager";
@@ -6,13 +6,8 @@ import assert = require("assert");
 import { LocalModule } from "../local-module";
 import {
   changedSincePublish,
-  changedSinceVersionCommit, dependsOnOneOf,
-  getCommitsSinceLastPublish,
-  getCommitsSinceLatestVersion,
-  hasUncommittedChanges,
-  openRepo
+  changedSinceVersionCommit, dependsOnOneOf
 } from "../git";
-import * as chalk from "chalk";
 
 
 export async function eachCommand() {

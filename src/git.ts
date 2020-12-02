@@ -1,63 +1,31 @@
-import * as git from "nodegit";
 import * as semver from "semver";
 import * as chalk from "chalk";
 import { LocalModule } from "./local-module";
-import { runCommand } from "./process";
+import { getCommandOutput, runCommand } from "./process";
 import { getDirectModuleDeps } from "./dependencies";
 import { getPublishedPackageInfo } from "./registry";
 
 
+interface Commit {
+  message: string;
+  hash: string;
+  tags: string[];
+}
+
+
 export interface RepositoryChangesInfo {
-  newCommits: git.Commit[];
+  newCommits: Commit[];
   latestStableVersion: string | undefined;
-  latestStableCommit: git.Commit | undefined;
+  latestStableCommit: Commit | undefined;
 }
 
 
-/**
- * Returns repository object for given path, if the path is inside git repository.
- * Returns `null` if path is outside a git repository.
- */
-export async function openRepo(repoPath: string): Promise<git.Repository | null> {
-  try {
-    return await git.Repository.open(repoPath);
-  } catch (error) {
-    if (error.errno === git.Error.CODE.ENOTFOUND) {
-      return null;
-    }
-    throw error;
-  }
-}
-
-
-function formatCommitMessage(c: git.Commit) {
+function formatCommitMessage(c?: Commit) {
   if (!c) {
     return "";
   }
 
-  return c.message().trim().replace(/\r?\n|\r/g, "");
-}
-
-
-export interface TagInfo {
-  name: string;
-  commit: git.Commit;
-}
-
-
-async function getTags(repo: git.Repository): Promise<TagInfo[]> {
-  let tagNames: string[] = await git.Tag.list(repo);
-  let commits = await Promise.all(tagNames.map(tagName => repo.getReferenceCommit(tagName)));
-
-  return tagNames.map((tagName, index) => ({
-    name: tagName,
-    commit: commits[index]
-  }));
-}
-
-
-function getCommitTags(commit: git.Commit, tags: TagInfo[]): TagInfo[] {
-  return tags.filter(tag => commit.id().equal(tag.commit.id()));
+  return c.message.trim().replace(/\r?\n|\r/g, "");
 }
 
 
@@ -70,10 +38,9 @@ function getVersionFromText(text: string): string | undefined {
 }
 
 
-function getVersionFromCommit(commit: git.Commit, allTags: TagInfo[]): string | undefined {
-  const commitTags = getCommitTags(commit, allTags);
-  for (const commitTag of commitTags) {
-    const version = getVersionFromText(commitTag.name);
+function getVersionFromCommit(commit: Commit): string | undefined {
+  for (const commitTag of commit.tags) {
+    const version = getVersionFromText(commitTag);
     if (version) {
       return version;
     }
@@ -83,38 +50,64 @@ function getVersionFromCommit(commit: git.Commit, allTags: TagInfo[]): string | 
 }
 
 
-async function listCommits(repo: git.Repository): Promise<git.Commit[]> {
-  let head = await repo.getHeadCommit();
-  let historyReader = head.history();
-  let commits: git.Commit[] = [];
-
-  return new Promise<git.Commit[]>((resolve, reject) => {
-    historyReader.start();
-
-    historyReader.on("commit", (c: git.Commit) => {
-      commits.push(c);
-    });
-
-    historyReader.on("end", () => {
-      resolve(commits);
-    });
-
-    historyReader.on("error", reject);
+async function listCommits(dir: string): Promise<Commit[]> {
+  let output = await getCommandOutput("git", [ "rev-list", "HEAD", "--format=%H %s" ], {
+    cwd: dir
   });
+
+  const tags = (await getCommandOutput("git", [ "show-ref", "--tags", "--dereference" ], { cwd: dir }))
+  .split("\n")
+  .filter(line => line.endsWith("^{}") && line)
+  .map(line => {
+    const spaceIndex = line.indexOf(" ");
+    return {
+      hash: line.slice(0, spaceIndex),
+      name: line.slice(spaceIndex + 1 + "/refs/tags/".length, -"^{}".length)
+    };
+  });
+
+  return output
+  .split("\n")
+  .filter(line => !line.startsWith("commit ") && line)
+  .map(line => {
+    const spaceIndex = line.indexOf(" ");
+    let hash = line.slice(0, spaceIndex);
+    return {
+      hash,
+      message: line.slice(spaceIndex + 1),
+      tags: tags.filter(tag => tag.hash === hash).map(tag => tag.name)
+    };
+  });
+}
+
+
+export async function isGitRepo(dir: string): Promise<boolean> {
+  try {
+    let output = await getCommandOutput("git", [ "rev-parse", "--is-inside-work-tree" ], {
+      cwd: dir
+    });
+    output = output.trim();
+    return output === "true";
+  } catch (error) {
+    if (error.exitCode === 128) {
+      return false;
+    } else {
+      throw error;
+    }
+  }
 }
 
 
 /**
  * Returns list of commits after the latest version commit in the current branch.
  */
-export async function getCommitsSinceLatestVersion(repo: git.Repository): Promise<RepositoryChangesInfo> {
-  let latestVersionCommit: git.Commit | undefined;
+export async function getCommitsSinceLatestVersion(dir: string): Promise<RepositoryChangesInfo> {
+  let latestVersionCommit: Commit | undefined;
   let latestVersion: string | undefined;
-  let newCommits: git.Commit[] = [];
-  const allTags = await getTags(repo);
+  let newCommits: Commit[] = [];
 
-  for (const commit of await listCommits(repo)) {
-    const version = getVersionFromCommit(commit, allTags);
+  for (const commit of await listCommits(dir)) {
+    const version = getVersionFromCommit(commit);
     if (version) {
       latestVersionCommit = commit;
       latestVersion = version;
@@ -132,16 +125,15 @@ export async function getCommitsSinceLatestVersion(repo: git.Repository): Promis
 }
 
 
-export async function getCommitsSinceLastPublish(mod: LocalModule, repo: git.Repository): Promise<RepositoryChangesInfo> {
+export async function getCommitsSinceLastPublish(mod: LocalModule): Promise<RepositoryChangesInfo> {
   let latestStableVersion: string | undefined;
-  let latestStableCommit: git.Commit | undefined;
-  let newCommits: git.Commit[] = [];
-  const allTags = await getTags(repo);
+  let latestStableCommit: Commit | undefined;
+  let newCommits: Commit[] = [];
 
   const publishInfo = await getPublishedPackageInfo(mod.checkedName.name);
 
-  for (const commit of await listCommits(repo)) {
-    const commitVersion = getVersionFromCommit(commit, allTags);
+  for (const commit of await listCommits(mod.path)) {
+    const commitVersion = getVersionFromCommit(commit);
     if (!commitVersion || !publishInfo || !publishInfo.versions.includes(commitVersion)) {
       newCommits.push(commit);
     } else {
@@ -166,16 +158,26 @@ export async function getCommitsSinceLastPublish(mod: LocalModule, repo: git.Rep
  *   - any staged, but not yet committed changes
  *   - any not yet staged changes
  */
-export async function hasUncommittedChanges(repo: git.Repository): Promise<boolean> {
-  let statusFiles = await repo.getStatus();
-  return statusFiles.length > 0;
+export async function hasUncommittedChanges(dir: string): Promise<boolean> {
+  try {
+    await getCommandOutput("git", [ "diff-index", "--quiet", "HEAD", "--exit-code" ], {
+      cwd: dir
+    });
+    return false;
+  } catch (error) {
+    if (error.exitCode === 1) {
+      return true;
+    } else {
+      throw error;
+    }
+  }
 }
 
 
 /**
  * Formats list of commits for displaying it to user.
  */
-export function getShortCommitsOverview(commits: git.Commit[]): string {
+export function getShortCommitsOverview(commits: Commit[]): string {
   if (!commits.length) {
     return "";
   }
@@ -208,8 +210,10 @@ export async function stageAllAndCommit(mod: LocalModule, message: string, tag?:
 }
 
 
-export async function getCurrentBranchName(repo: git.Repository): Promise<string> {
-  return (await repo.getCurrentBranch()).name().replace(/^refs\/heads\//, "");
+export async function getCurrentBranchName(mod: LocalModule): Promise<string> {
+  return getCommandOutput("git", [ "rev-parse", "--abbrev-ref", "HEAD" ], {
+    cwd: mod.path
+  });
 }
 
 
@@ -219,16 +223,15 @@ export function dependsOnOneOf(mod: LocalModule, mods: LocalModule[]): boolean {
 
 
 export async function changedSinceVersionCommit(mod: LocalModule): Promise<boolean> {
-  const repo = await openRepo(mod.path);
-  if (!repo) {
+  if (!await isGitRepo(mod.path)) {
     return false;
   }
 
-  if (await hasUncommittedChanges(repo)) {
+  if (await hasUncommittedChanges(mod.path)) {
     return true;
   }
 
-  const newCommitsInfo = await getCommitsSinceLatestVersion(repo);
+  const newCommitsInfo = await getCommitsSinceLatestVersion(mod.path);
   if (newCommitsInfo.newCommits.length) {
     return true;
   }
@@ -239,16 +242,15 @@ export async function changedSinceVersionCommit(mod: LocalModule): Promise<boole
 
 
 export async function changedSincePublish(mod: LocalModule): Promise<boolean> {
-  const repo = await openRepo(mod.path);
-  if (!repo) {
+  if (!await isGitRepo(mod.path)) {
     return false;
   }
 
-  if (await hasUncommittedChanges(repo)) {
+  if (await hasUncommittedChanges(mod.path)) {
     return true;
   }
 
-  const newCommitsInfo = await getCommitsSinceLastPublish(mod, repo);
+  const newCommitsInfo = await getCommitsSinceLastPublish(mod);
   if (newCommitsInfo.newCommits.length) {
     return true;
   }

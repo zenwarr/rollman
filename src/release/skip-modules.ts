@@ -3,7 +3,7 @@ import { ModuleDep, WalkerAction, walkModules } from "../dependencies";
 import * as prompts from "prompts";
 import * as chalk from "chalk";
 import { cancelRelease, ReleaseContext } from "./release-context";
-import { hasUncommittedChanges } from "../git";
+import { hasUncommittedChanges, isGitRepo } from "../git";
 
 
 /**
@@ -19,8 +19,7 @@ export async function getModulesToSkip(ctx: ReleaseContext): Promise<false | Loc
       return;
     }
 
-    let repo = await ctx.getRepo(mod);
-    if (!repo) {
+    if (!await isGitRepo(mod.path)) {
       if (result !== false) {
         result.push(mod);
       }
@@ -28,7 +27,7 @@ export async function getModulesToSkip(ctx: ReleaseContext): Promise<false | Loc
       return;
     }
 
-    if (await hasUncommittedChanges(repo)) {
+    if (await hasUncommittedChanges(mod.path)) {
       const reply = await prompts({
         type: "select",
         name: "value",

@@ -7,7 +7,7 @@ import * as semver from "semver";
 import * as prompts from "prompts";
 import * as chalk from "chalk";
 import { generateLockFile } from "lockfile-generator";
-import { hasUncommittedChanges, stageAllAndCommit } from "../git";
+import { hasUncommittedChanges, isGitRepo, stageAllAndCommit } from "../git";
 
 
 function getDepKey(type: DepType) {
@@ -97,8 +97,7 @@ export async function updateDependencies(ctx: ReleaseContext, mod: LocalModule, 
     }
   }
 
-  const repo = await ctx.getRepo(mod);
-  if (repo && await hasUncommittedChanges(repo)) {
+  if (await isGitRepo(mod.path) && await hasUncommittedChanges(mod.path)) {
     await stageAllAndCommit(mod, "chore: update dependencies");
   }
 }

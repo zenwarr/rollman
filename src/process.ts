@@ -36,7 +36,10 @@ export async function runCommand(command: string, args: string[], options?: Comm
         if (output) {
           console.error(output);
         }
-        reject(new Error(`Process exited with code ${ code }`));
+
+        const error: any = new Error(`Process exited with code ${ code } (${ commandTitle })`);
+        error.exitCode = code;
+        reject(error);
       }
     });
 
@@ -65,6 +68,7 @@ export async function fork(scriptPath: string, args: string[], options?: child_p
 export async function getCommandOutput(command: string, args: string[], options?: CommandOptions): Promise<string> {
   return runCommand(command, args, {
     stdio: "pipe",
+    silent: true,
     ...options
   });
 }

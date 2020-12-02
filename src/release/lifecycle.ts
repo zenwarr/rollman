@@ -2,7 +2,7 @@ import { getManifestManager } from "../manifest-manager";
 import { getYarnExecutable, runCommand } from "../process";
 import { getProject } from "../project";
 import * as chalk from "chalk";
-import { hasUncommittedChanges, stageAllAndCommit } from "../git";
+import { hasUncommittedChanges, isGitRepo, stageAllAndCommit } from "../git";
 import { LocalModule } from "../local-module";
 import { ReleaseContext } from "./release-context";
 
@@ -40,12 +40,11 @@ export async function runModulePrerelease(ctx: ReleaseContext, mod: LocalModule)
     return false;
   }
 
-  const repo = await ctx.getRepo(mod);
-  if (!repo) {
+  if (!await isGitRepo(mod.path)) {
     return true;
   }
 
-  if (await hasUncommittedChanges(repo)) {
+  if (await hasUncommittedChanges(mod.path)) {
     await stageAllAndCommit(mod, "chore: prerelease");
   }
 
