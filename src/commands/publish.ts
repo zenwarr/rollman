@@ -54,30 +54,34 @@ export async function publishCommand(): Promise<void> {
     }
   });
 
-  for (const modToPublish of toPublish) {
-    await fork(require.resolve("../release/semantic-version"), [ "--dir", modToPublish.path ]);
+  for (const mod of toPublish) {
+    await fork(require.resolve("../release/semantic-version"), [ "--dir", mod.path ]);
 
-    if (project.options.useLockFiles && modToPublish.alwaysUpdateLockFile && args.lockfileCopyPath) {
-      await generateLockFile(modToPublish.path, localModulesMeta);
+    if (project.options.useLockFiles && mod.alwaysUpdateLockFile && args.lockfileCopyPath) {
+      await generateLockFile(mod.path, localModulesMeta);
 
       const parentDir = path.dirname(args.lockfileCopyPath);
       if (parentDir !== ".") {
-        fs.mkdirSync(path.join(modToPublish.path, parentDir), { recursive: true });
+        fs.mkdirSync(path.join(mod.path, parentDir), { recursive: true });
       }
-      fs.copyFileSync(path.join(modToPublish.path, "package-lock.json"), path.join(modToPublish.path, args.lockfileCopyPath));
+      fs.copyFileSync(path.join(mod.path, "package-lock.json"), path.join(mod.path, args.lockfileCopyPath));
     }
 
-    const manifest = getManifestManager().readPackageManifest(modToPublish.path);
+    // localModulesMeta.set(mod.checkedName.name, await getPublishedPackageMetaInfo(mod.checkedName.name, newVersion));
+  }
+
+  for (const mod of toPublish) {
+    await pushChanges(mod);
+  }
+
+  for (const mod of toPublish) {
+    const manifest = getManifestManager().readPackageManifest(mod.path);
     const newVersion = manifest.version;
 
-    const publishTag = await getPublishTag(modToPublish.checkedName.name, newVersion);
-    await runCommand(getNpmExecutable(), [ "publish", modToPublish.path, "--tag", publishTag ], {
+    const publishTag = await getPublishTag(mod.checkedName.name, newVersion);
+    await runCommand(getNpmExecutable(), [ "publish", mod.path, "--tag", publishTag ], {
       cwd: project.rootDir
     });
-
-    // localModulesMeta.set(modToPublish.checkedName.name, await getPublishedPackageMetaInfo(modToPublish.checkedName.name, newVersion));
-
-    await pushChanges(modToPublish);
   }
 }
 
