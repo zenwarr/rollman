@@ -19,6 +19,7 @@ export type Arguments = {
   args: string[];
 } | {
   subCommand: "publish";
+  lockfileCopyPath?: string;
 });
 
 
@@ -68,7 +69,11 @@ export class ArgumentsManager {
       nargs: argparse.Const.REMAINDER
     });
 
-    subparsers.addParser("publish", { help: "Publish changed packages" });
+    const publishParser = subparsers.addParser("publish", { help: "Publish changed packages" });
+    publishParser.addArgument("--lockfile-copy-path", {
+      help: "Path relative to package root where lockfile should be copied after generating",
+      dest: "lockfileCopyPath"
+    });
 
     let args: Arguments = argparser.parseArgs();
     this._args = args;

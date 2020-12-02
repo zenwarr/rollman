@@ -8,6 +8,10 @@ import { generateLockFile } from "lockfile-generator";
 import { MetaInfo } from "lockfile-generator/declarations/lib/MetaInfoResolver";
 import { getPublishedPackageInfo } from "../registry";
 import * as semver from "semver";
+import { getArgs } from "../arguments";
+import * as assert from "assert";
+import * as path from "path";
+import * as fs from "fs";
 
 
 async function moduleShouldBePublished(mod: LocalModule, dirtyModules: LocalModule[]): Promise<boolean> {
@@ -45,6 +49,9 @@ export async function publishCommand(): Promise<void> {
   const dirtyModules: LocalModule[] = [];
   const localModulesMeta = new Map<string, MetaInfo>();
 
+  const args = getArgs();
+  assert(args.subCommand === "publish");
+
   await walkModules(async mod => {
     if (await moduleShouldBePublished(mod, dirtyModules)) {
       toPublish.push(mod);
@@ -56,11 +63,15 @@ export async function publishCommand(): Promise<void> {
   for (const modToPublish of toPublish) {
     await fork(require.resolve("../release/semantic-version"), [ "--dir", modToPublish.path ]);
 
-    if (project.options.useLockFiles && modToPublish.alwaysUpdateLockFile) {
+    if (project.options.useLockFiles && modToPublish.alwaysUpdateLockFile && args.lockfileCopyPath) {
       await generateLockFile(modToPublish.path, localModulesMeta);
-    }
 
-    // todo: bundle lockfile
+      const parentDir = path.dirname(args.lockfileCopyPath);
+      if (parentDir !== ".") {
+        fs.mkdirSync(path.join(modToPublish.path, parentDir), { recursive: true });
+      }
+      fs.copyFileSync(path.join(modToPublish.path, "package-lock.json"), path.join(modToPublish.path, args.lockfileCopyPath));
+    }
 
     const manifest = getManifestManager().readPackageManifest(modToPublish.path);
     const newVersion = manifest.version;
