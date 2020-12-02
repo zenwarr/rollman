@@ -46,6 +46,7 @@ export async function publishCommand(): Promise<void> {
     if (await moduleShouldBePublished(mod, dirtyModules)) {
       toPublish.push(mod);
     } else {
+      console.log(`Module ${ mod.formattedName } has no changes since last published version, skipping`);
       localModulesMeta.set(
           mod.checkedName.name,
           await getPublishedPackageMetaInfo(mod.checkedName.name, getCurrentPackageVersion(mod.path))
@@ -70,13 +71,13 @@ export async function publishCommand(): Promise<void> {
     const newVersion = manifest.version;
 
     const publishTag = await getPublishTag(modToPublish.checkedName.name, newVersion);
-    await runCommand(getNpmExecutable(), [ "publish", modToPublish.path, "--tag", publishTag, "--dry-run" ], {
+    await runCommand(getNpmExecutable(), [ "publish", modToPublish.path, "--tag", publishTag ], {
       cwd: project.rootDir
     });
 
     // localModulesMeta.set(modToPublish.checkedName.name, await getPublishedPackageMetaInfo(modToPublish.checkedName.name, newVersion));
 
-    // await pushChanges(modToPublish);
+    await pushChanges(modToPublish);
   }
 }
 
@@ -101,7 +102,7 @@ async function getPublishedPackageMetaInfo(packageName: string, version: string)
 
 
 async function pushChanges(mod: LocalModule) {
-  await runCommand("git", [ "push", "origin", "--tags" ], {
+  await runCommand("git", [ "push", "origin", "--follow-tags" ], {
     cwd: mod.path
   });
 }

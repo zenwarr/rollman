@@ -227,7 +227,6 @@ export async function changedSinceVersionCommit(mod: LocalModule): Promise<boole
     return true;
   }
 
-  console.log(`Module ${ chalk.yellow(mod.formattedName) } has no changes since previous version commit, skipping`);
   return false;
 }
 
@@ -246,6 +245,5 @@ export async function changedSincePublish(mod: LocalModule): Promise<boolean> {
     return true;
   }
 
-  console.log(`Module ${ chalk.yellow(mod.formattedName) } has no changes since previous published version, skipping`);
   return false;
 }
