@@ -43,7 +43,7 @@ function getVersionFromCommit(commit: Commit): string | undefined {
   // strip conventional commit prefix
   const sepIndex = message.indexOf(":");
   if (sepIndex >= 0) {
-    message = message.slice(0, sepIndex).trim();
+    message = message.slice(sepIndex + 1).trim();
   }
 
   const version = getVersionFromText(message);
