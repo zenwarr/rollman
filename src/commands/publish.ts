@@ -15,11 +15,7 @@ import * as fs from "fs";
 
 
 async function moduleShouldBePublished(mod: LocalModule, dirtyModules: LocalModule[]): Promise<boolean> {
-  if (!mod.useNpm) {
-    return false;
-  }
-
-  if (!await isGitRepo(mod.path)) {
+  if (!mod.useNpm || !await isGitRepo(mod.path)) {
     return false;
   }
 
@@ -30,13 +26,7 @@ async function moduleShouldBePublished(mod: LocalModule, dirtyModules: LocalModu
 
   if (dependsOnOneOf(mod, dirtyModules)) {
     dirtyModules.push(mod);
-
-    // there is no changes in current module, but it depends on some changed module.
-    // in case this module requires lockfile generation, we should update it too.
-    const bundledModules: string[] = getManifestManager().readPackageManifest(mod.path).rollman?.bundled;
-    if (mod.alwaysUpdateLockFile || dirtyModules.some(dirty => bundledModules.includes(dirty.checkedName.name))) {
-      return true;
-    }
+    return true;
   }
 
   return false;
@@ -56,7 +46,10 @@ export async function publishCommand(): Promise<void> {
     if (await moduleShouldBePublished(mod, dirtyModules)) {
       toPublish.push(mod);
     } else {
-      localModulesMeta.set(mod.checkedName.name, await getPublishedPackageMetaInfo(mod.checkedName.name, getCurrentPackageVersion(mod.path)));
+      localModulesMeta.set(
+          mod.checkedName.name,
+          await getPublishedPackageMetaInfo(mod.checkedName.name, getCurrentPackageVersion(mod.path))
+      );
     }
   });
 
@@ -81,7 +74,7 @@ export async function publishCommand(): Promise<void> {
       cwd: project.rootDir
     });
 
-    localModulesMeta.set(modToPublish.checkedName.name, await getPublishedPackageMetaInfo(modToPublish.checkedName.name, newVersion));
+    // localModulesMeta.set(modToPublish.checkedName.name, await getPublishedPackageMetaInfo(modToPublish.checkedName.name, newVersion));
 
     // await pushChanges(modToPublish);
   }

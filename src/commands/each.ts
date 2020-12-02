@@ -24,7 +24,7 @@ export async function eachCommand() {
       return true;
     }
 
-    if (args.unpublishedOnly && !dependsOnOneOf(mod, changedModules) && !(await changedSincePublish(mod))) {
+    if (args.notPublishedOnly && !dependsOnOneOf(mod, changedModules) && !(await changedSincePublish(mod))) {
       return true;
     }
 
