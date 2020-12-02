@@ -27,7 +27,9 @@ export async function runCommand(command: string, args: string[], options?: Comm
     } as const);
 
     let output = "";
-    proc.stdout && proc.stdout.on("data", text => output += text);
+    if (proc.stdout) {
+      proc.stdout.on("data", text => output += text);
+    }
 
     proc.on("close", code => {
       if (code === 0) {

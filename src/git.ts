@@ -9,7 +9,6 @@ import { getPublishedPackageInfo } from "./registry";
 interface Commit {
   message: string;
   hash: string;
-  tags: string[];
 }
 
 
@@ -39,11 +38,17 @@ function getVersionFromText(text: string): string | undefined {
 
 
 function getVersionFromCommit(commit: Commit): string | undefined {
-  for (const commitTag of commit.tags) {
-    const version = getVersionFromText(commitTag);
-    if (version) {
-      return version;
-    }
+  let message = commit.message;
+
+  // strip conventional commit prefix
+  const sepIndex = message.indexOf(":");
+  if (sepIndex >= 0) {
+    message = message.slice(0, sepIndex).trim();
+  }
+
+  const version = getVersionFromText(message);
+  if (version) {
+    return version;
   }
 
   return undefined;
@@ -55,29 +60,17 @@ async function listCommits(dir: string): Promise<Commit[]> {
     cwd: dir
   });
 
-  const tags = (await getCommandOutput("git", [ "show-ref", "--tags", "--dereference" ], { cwd: dir }))
-  .split("\n")
-  .filter(line => line.endsWith("^{}") && line)
-  .map(line => {
-    const spaceIndex = line.indexOf(" ");
-    return {
-      hash: line.slice(0, spaceIndex),
-      name: line.slice(spaceIndex + 1 + "/refs/tags/".length, -"^{}".length)
-    };
-  });
-
   return output
-  .split("\n")
-  .filter(line => !line.startsWith("commit ") && line)
-  .map(line => {
-    const spaceIndex = line.indexOf(" ");
-    let hash = line.slice(0, spaceIndex);
-    return {
-      hash,
-      message: line.slice(spaceIndex + 1),
-      tags: tags.filter(tag => tag.hash === hash).map(tag => tag.name)
-    };
-  });
+    .split("\n")
+    .filter(line => !line.startsWith("commit ") && line)
+    .map(line => {
+      const spaceIndex = line.indexOf(" ");
+      let hash = line.slice(0, spaceIndex);
+      return {
+        hash,
+        message: line.slice(spaceIndex + 1)
+      };
+    });
 }
 
 
@@ -142,8 +135,6 @@ export async function getCommitsSinceLastPublish(mod: LocalModule): Promise<Repo
       break;
     }
   }
-
-  console.log("info", latestStableVersion, latestStableCommit);
 
   return {
     latestStableVersion,
