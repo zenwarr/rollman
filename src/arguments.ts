@@ -92,10 +92,6 @@ export class ArgumentsManager {
         args.config = path.resolve(process.cwd(), args.config);
       }
     }
-
-    console.log(args);
-
-    throw new Error("Method not implemented"); // todo
   }
 
 
