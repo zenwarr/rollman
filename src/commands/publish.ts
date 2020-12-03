@@ -53,8 +53,8 @@ export async function publishCommand(): Promise<void> {
     } else {
       console.log(`Module ${ mod.formattedName } has no changes since last published version, skipping`);
       localModulesMeta.set(
-        mod.checkedName.name,
-        await getPublishedPackageMetaInfo(mod.checkedName.name, getCurrentPackageVersion(mod.path))
+          mod.checkedName.name,
+          await getPublishedPackageMetaInfo(mod.checkedName.name, getCurrentPackageVersion(mod.path))
       );
     }
   });
@@ -81,7 +81,7 @@ export async function publishCommand(): Promise<void> {
   }
 
   for (const mod of toPublish) {
-    await pushChanges(mod.path);
+    await pushChanges(mod.path, args.dryRun);
   }
 
   for (const mod of toPublish) {
@@ -89,7 +89,11 @@ export async function publishCommand(): Promise<void> {
     const newVersion = manifest.version;
 
     const publishTag = await getPublishTag(mod.checkedName.name, newVersion);
-    await runCommand(getNpmExecutable(), [ "publish", mod.path, "--tag", publishTag ], {
+    let publishArgs = [ "publish", mod.path, "--tag", publishTag ];
+    if (args.dryRun) {
+      publishArgs.push("--dry-run");
+    }
+    await runCommand(getNpmExecutable(), publishArgs, {
       cwd: project.rootDir
     });
   }
@@ -97,7 +101,7 @@ export async function publishCommand(): Promise<void> {
   if (lockfileChanged) {
     const rootReleaseTag = ROOT_REPO_RELEASE_TAG_PREFIX + new Date().valueOf();
     await tagHead(project.rootDir, rootReleaseTag);
-    await pushChanges(project.rootDir);
+    await pushChanges(project.rootDir, args.dryRun);
   }
 }
 
@@ -121,10 +125,16 @@ async function getPublishedPackageMetaInfo(packageName: string, version: string)
 }
 
 
-async function pushChanges(dir: string) {
-  await runCommand("git", [ "push", "origin", "--follow-tags" ], {
-    cwd: dir
-  });
+async function pushChanges(dir: string, dryRun: boolean) {
+  const args = [ "push", "origin", "--follow-tags" ];
+
+  if (dryRun) {
+    console.log("->", ...args);
+  } else {
+    await runCommand("git", args, {
+      cwd: dir
+    });
+  }
 }
 
 

@@ -11,10 +11,6 @@ export class ManifestManager {
   public readPackageManifest(dirPath: string): any | undefined {
     let filePath = this.getPackageManifestPath(dirPath);
 
-    if (this._metadataCache.has(filePath)) {
-      return this._metadataCache.get(filePath)!;
-    }
-
     let metadata: object | undefined;
     try {
       metadata = fs.readJSONSync(filePath);
@@ -30,10 +26,6 @@ export class ManifestManager {
       throw new Error(`Expected contents of ${ filePath } to be object`);
     }
 
-    if (metadata != null) {
-      this._metadataCache.set(filePath, metadata);
-    }
-
     return metadata;
   }
 
@@ -41,14 +33,7 @@ export class ManifestManager {
     const manifestPath = this.getPackageManifestPath(dir);
 
     fs.writeFileSync(manifestPath, JSON.stringify(data, null, 2) + "\n", "utf-8");
-    this.invalidate(dir);
   }
-
-  public invalidate(dirPath: string) {
-    this._metadataCache.delete(this.getPackageManifestPath(dirPath));
-  }
-
-  private _metadataCache = new Map<string, object | undefined>();
 }
 
 

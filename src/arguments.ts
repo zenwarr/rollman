@@ -21,6 +21,7 @@ export type Arguments = {
   subCommand: "publish";
   lockfileCopyPath?: string;
   prerelease?: string;
+  dryRun: boolean;
 });
 
 
@@ -79,6 +80,12 @@ export class ArgumentsManager {
       help: "Generate prerelease versions",
       dest: "prerelease"
     });
+    // publishParser.addArgument("--dry-run", {
+    //   help: "Do not actually publish or commit anything",
+    //   action: "storeTrue",
+    //   defaultValue: false,
+    //   dest: "dryRun"
+    // });
 
     let args: Arguments = argparser.parseArgs();
     this._args = args;
