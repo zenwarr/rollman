@@ -30,20 +30,25 @@ export async function eachCommand() {
   async function shouldBeSkipped(mod: LocalModule) {
     assert(args.subCommand === "each");
 
-    if (args.changedOnly && !dependsOnOneOf(mod, changedModules) && !(await changedSinceVersionCommit(mod))) {
-      return true;
+    if (dependsOnOneOf(mod, changedModules)) {
+      changedModules.push(mod);
+      return false;
     }
 
     if (args.notPublishedOnly && shouldForce) {
+      changedModules.push(mod);
+      return false;
+    }
+
+    if (args.changedOnly && !(await changedSinceVersionCommit(mod))) {
       return true;
     }
 
-    if (args.notPublishedOnly && !dependsOnOneOf(mod, changedModules) && !(await changedSincePublish(mod))) {
+    if (args.notPublishedOnly && !(await changedSincePublish(mod))) {
       return true;
     }
 
     changedModules.push(mod);
-
     return false;
   }
 
