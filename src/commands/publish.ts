@@ -60,7 +60,12 @@ export async function publishCommand(): Promise<void> {
   });
 
   for (const mod of toPublish) {
-    await fork(require.resolve("../release/semantic-version"), [ "--dir", mod.path ]);
+    let semanticVersionArgs = [ "--dir", mod.path ];
+    if (args.prerelease) {
+      semanticVersionArgs.push("--prerelease", args.prerelease);
+    }
+
+    await fork(require.resolve("../release/semantic-version"), semanticVersionArgs);
 
     if (project.options.useLockFiles && mod.alwaysUpdateLockFile && args.lockfileCopyPath) {
       await generateLockFile(mod.path, localModulesMeta);

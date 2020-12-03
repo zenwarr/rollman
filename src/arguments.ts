@@ -20,6 +20,7 @@ export type Arguments = {
 } | {
   subCommand: "publish";
   lockfileCopyPath?: string;
+  prerelease?: string;
 });
 
 
@@ -74,6 +75,10 @@ export class ArgumentsManager {
       help: "Path relative to package root where lockfile should be copied after generating",
       dest: "lockfileCopyPath"
     });
+    publishParser.addArgument("--prerelease", {
+      help: "Generate prerelease versions",
+      dest: "prerelease"
+    });
 
     let args: Arguments = argparser.parseArgs();
     this._args = args;
@@ -87,6 +92,10 @@ export class ArgumentsManager {
         args.config = path.resolve(process.cwd(), args.config);
       }
     }
+
+    console.log(args);
+
+    throw new Error("Method not implemented"); // todo
   }
 
 

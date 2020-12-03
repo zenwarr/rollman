@@ -6,13 +6,16 @@ const parser = new argparse.ArgumentParser();
 parser.addArgument("--dir", {
   dest: "dir"
 });
+parser.addArgument("--prerelease", {
+  dest: "prerelease"
+});
 
-const args: { dir: string } = parser.parseArgs();
+const args: { dir: string; prerelease?: string } = parser.parseArgs();
 
 process.chdir(args.dir);
 
 standardVersion({
-  prerelease: undefined, // todo: control prerelease
+  prerelease: args.prerelease,
   skip: {
     changelog: true
   },
