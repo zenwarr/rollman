@@ -283,7 +283,8 @@ export interface TagInfo {
  * Returns list of all tags in repository (latest tags come first)
  */
 export async function listTags(dir: string): Promise<TagInfo[]> {
-  return (await getCommandOutput("git", [ "show-ref", "--tags", "--dereference" ], { cwd: dir }))
+  try {
+    return (await getCommandOutput("git", [ "show-ref", "--tags", "--dereference" ], { cwd: dir }))
     .split("\n")
     .filter(line => line.endsWith("^{}") && line)
     .map(line => {
@@ -294,6 +295,14 @@ export async function listTags(dir: string): Promise<TagInfo[]> {
       };
     })
     .reverse();
+  } catch (error) {
+    if (error.exitCode === 1) {
+      // show-ref returns 1 exit code if nothing matches the request https://linux.die.net/man/1/git-show-ref
+      return [];
+    } else {
+      throw error;
+    }
+  }
 }
 
 
