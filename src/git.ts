@@ -253,6 +253,7 @@ export async function isFileChangedAfterTag(filePath: string, tagName: string): 
     const relativeFileName = path.basename(filePath);
     const dirName = path.dirname(filePath);
     await runCommand("git", [ "diff", "--exit-code", "--name-only", "HEAD", tagName, "--", relativeFileName ], {
+      silent: true,
       cwd: dirName
     });
     return false;
@@ -285,16 +286,16 @@ export interface TagInfo {
 export async function listTags(dir: string): Promise<TagInfo[]> {
   try {
     return (await getCommandOutput("git", [ "show-ref", "--tags", "--dereference" ], { cwd: dir }))
-    .split("\n")
-    .filter(line => line.endsWith("^{}") && line)
-    .map(line => {
-      const spaceIndex = line.indexOf(" ");
-      return {
-        hash: line.slice(0, spaceIndex),
-        name: line.slice(spaceIndex + 1 + "/refs/tags/".length, -"^{}".length)
-      };
-    })
-    .reverse();
+      .split("\n")
+      .filter(line => line.endsWith("^{}") && line)
+      .map(line => {
+        const spaceIndex = line.indexOf(" ");
+        return {
+          hash: line.slice(0, spaceIndex),
+          name: line.slice(spaceIndex + 1 + "refs/tags/".length, -"^{}".length)
+        };
+      })
+      .reverse();
   } catch (error) {
     if (error.exitCode === 1) {
       // show-ref returns 1 exit code if nothing matches the request https://linux.die.net/man/1/git-show-ref

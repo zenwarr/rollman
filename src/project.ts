@@ -6,6 +6,7 @@ import { ServiceLocator } from "./locator";
 import { getArgs } from "./arguments";
 import { getManifestManager } from "./manifest-manager";
 import { DEFAULT_RELEASE_BRANCH, isValidReleaseBranchesParam } from "./release/ensure-branches";
+import { isFileChangedSincePrefixedTag } from "./git";
 
 
 export interface ProjectOptions {
@@ -126,4 +127,12 @@ function isWorkspaceEnabled(manifestPath: string) {
 
 export function getProject() {
   return ServiceLocator.instance.get<Project>("project");
+}
+
+
+export const ROOT_REPO_RELEASE_TAG_PREFIX = "released-";
+
+
+export async function shouldForcePublish(project: Project): Promise<boolean> {
+  return isFileChangedSincePrefixedTag(path.join(project.rootDir, "yarn.lock"), ROOT_REPO_RELEASE_TAG_PREFIX);
 }

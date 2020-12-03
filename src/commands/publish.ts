@@ -2,7 +2,7 @@ import { walkModules } from "../dependencies";
 import { LocalModule } from "../local-module";
 import { changedSincePublish, dependsOnOneOf, isFileChangedSincePrefixedTag, isGitRepo, tagHead } from "../git";
 import { fork, getNpmExecutable, runCommand } from "../process";
-import { getProject } from "../project";
+import { getProject, ROOT_REPO_RELEASE_TAG_PREFIX, shouldForcePublish } from "../project";
 import { getManifestManager } from "../manifest-manager";
 import { generateLockFile } from "lockfile-generator";
 import { MetaInfo } from "lockfile-generator/declarations/lib/MetaInfoResolver";
@@ -12,9 +12,6 @@ import { getArgs } from "../arguments";
 import * as assert from "assert";
 import * as path from "path";
 import * as fs from "fs";
-
-
-const ROOT_REPO_RELEASE_TAG_PREFIX = "released-";
 
 
 async function moduleShouldBePublished(mod: LocalModule, dirtyModules: LocalModule[]): Promise<boolean> {
@@ -45,7 +42,7 @@ export async function publishCommand(): Promise<void> {
   const args = getArgs();
   assert(args.subCommand === "publish");
 
-  const forceUpdate = await isFileChangedSincePrefixedTag(path.join(project.rootDir, "yarn.lock"), ROOT_REPO_RELEASE_TAG_PREFIX);
+  const forceUpdate = await shouldForcePublish(project);
   if (forceUpdate) {
     console.log("Workspace root yarn.lock changed since latest release, forcing full update");
   }
