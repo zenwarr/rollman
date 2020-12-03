@@ -42,13 +42,13 @@ export async function publishCommand(): Promise<void> {
   const args = getArgs();
   assert(args.subCommand === "publish");
 
-  const forceUpdate = await shouldForcePublish(project);
-  if (forceUpdate) {
+  const lockfileChanged = await shouldForcePublish(project);
+  if (lockfileChanged) {
     console.log("Workspace root yarn.lock changed since latest release, forcing full update");
   }
 
   await walkModules(async mod => {
-    if (forceUpdate || await moduleShouldBePublished(mod, dirtyModules)) {
+    if (lockfileChanged || await moduleShouldBePublished(mod, dirtyModules)) {
       toPublish.push(mod);
     } else {
       console.log(`Module ${ mod.formattedName } has no changes since last published version, skipping`);
@@ -89,9 +89,11 @@ export async function publishCommand(): Promise<void> {
     });
   }
 
-  const rootReleaseTag = ROOT_REPO_RELEASE_TAG_PREFIX + new Date().valueOf();
-  await tagHead(project.rootDir, rootReleaseTag);
-  await pushChanges(project.rootDir);
+  if (lockfileChanged) {
+    const rootReleaseTag = ROOT_REPO_RELEASE_TAG_PREFIX + new Date().valueOf();
+    await tagHead(project.rootDir, rootReleaseTag);
+    await pushChanges(project.rootDir);
+  }
 }
 
 
