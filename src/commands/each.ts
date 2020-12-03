@@ -19,9 +19,12 @@ export async function eachCommand() {
 
   const changedModules: LocalModule[] = [];
 
-  const shouldForce = await shouldForcePublish(project);
-  if (shouldForce) {
-    console.log("Workspace root yarn.lock changed since latest release, all modules are considered to be unpublished");
+  let shouldForce = false;
+  if (args.notPublishedOnly) {
+    shouldForce = await shouldForcePublish(project);
+    if (shouldForce) {
+      console.log("Workspace root yarn.lock changed since latest release, all modules are considered to be unpublished");
+    }
   }
 
   async function shouldBeSkipped(mod: LocalModule) {
