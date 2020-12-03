@@ -4,6 +4,7 @@ import { LocalModule } from "./local-module";
 import { getCommandOutput, runCommand } from "./process";
 import { getDirectModuleDeps } from "./dependencies";
 import { getPublishedPackageInfo } from "./registry";
+import * as path from "path";
 
 
 interface Commit {
@@ -194,9 +195,7 @@ export async function stageAllAndCommit(mod: LocalModule, message: string, tag?:
   });
 
   if (tag) {
-    await runCommand("git", [ "tag", "-a", tag, "-m", tag ], {
-      cwd: mod.path
-    });
+    await tagHead(mod.path, tag);
   }
 }
 
@@ -246,4 +245,65 @@ export async function changedSincePublish(mod: LocalModule): Promise<boolean> {
   }
 
   return false;
+}
+
+
+export async function isFileChangedAfterTag(filePath: string, tagName: string): Promise<boolean> {
+  try {
+    const relativeFileName = path.basename(filePath);
+    const dirName = path.dirname(filePath);
+    await runCommand("git", [ "diff", "--exit-code", "--name-only", "HEAD", tagName, "--", relativeFileName ], {
+      cwd: dirName
+    });
+    return false;
+  } catch (error) {
+    if (error.exitCode === 1) {
+      return true;
+    } else {
+      throw error;
+    }
+  }
+}
+
+
+export async function tagHead(dir: string, tagName: string): Promise<void> {
+  await runCommand("git", [ "tag", "-a", tagName, "-m", tagName ], {
+    cwd: dir
+  });
+}
+
+
+export interface TagInfo {
+  hash: string;
+  name: string;
+}
+
+
+/**
+ * Returns list of all tags in repository (latest tags come first)
+ */
+export async function listTags(dir: string): Promise<TagInfo[]> {
+  return (await getCommandOutput("git", [ "show-ref", "--tags", "--dereference" ], { cwd: dir }))
+    .split("\n")
+    .filter(line => line.endsWith("^{}") && line)
+    .map(line => {
+      const spaceIndex = line.indexOf(" ");
+      return {
+        hash: line.slice(0, spaceIndex),
+        name: line.slice(spaceIndex + 1 + "/refs/tags/".length, -"^{}".length)
+      };
+    })
+    .reverse();
+}
+
+
+export async function isFileChangedSincePrefixedTag(filePath: string, tagPrefix: string): Promise<boolean> {
+  const repoPath = path.dirname(filePath);
+  const tags = await listTags(repoPath);
+  const latestMatchingTag = tags.find(tag => tag.name.startsWith(tagPrefix));
+  if (!latestMatchingTag) {
+    return true;
+  }
+
+  return isFileChangedAfterTag(filePath, latestMatchingTag.name);
 }

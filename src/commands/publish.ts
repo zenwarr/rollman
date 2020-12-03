@@ -1,6 +1,6 @@
 import { walkModules } from "../dependencies";
 import { LocalModule } from "../local-module";
-import { changedSincePublish, dependsOnOneOf, isGitRepo } from "../git";
+import { changedSincePublish, dependsOnOneOf, isFileChangedSincePrefixedTag, isGitRepo, tagHead } from "../git";
 import { fork, getNpmExecutable, runCommand } from "../process";
 import { getProject } from "../project";
 import { getManifestManager } from "../manifest-manager";
@@ -12,6 +12,9 @@ import { getArgs } from "../arguments";
 import * as assert from "assert";
 import * as path from "path";
 import * as fs from "fs";
+
+
+const ROOT_REPO_RELEASE_TAG_PREFIX = "released-";
 
 
 async function moduleShouldBePublished(mod: LocalModule, dirtyModules: LocalModule[]): Promise<boolean> {
@@ -42,14 +45,19 @@ export async function publishCommand(): Promise<void> {
   const args = getArgs();
   assert(args.subCommand === "publish");
 
+  const forceUpdate = await isFileChangedSincePrefixedTag(path.join(project.rootDir, "yarn.lock"), ROOT_REPO_RELEASE_TAG_PREFIX);
+  if (forceUpdate) {
+    console.log("Workspace root yarn.lock changed since latest release, forcing full update");
+  }
+
   await walkModules(async mod => {
-    if (await moduleShouldBePublished(mod, dirtyModules)) {
+    if (forceUpdate || await moduleShouldBePublished(mod, dirtyModules)) {
       toPublish.push(mod);
     } else {
       console.log(`Module ${ mod.formattedName } has no changes since last published version, skipping`);
       localModulesMeta.set(
-          mod.checkedName.name,
-          await getPublishedPackageMetaInfo(mod.checkedName.name, getCurrentPackageVersion(mod.path))
+        mod.checkedName.name,
+        await getPublishedPackageMetaInfo(mod.checkedName.name, getCurrentPackageVersion(mod.path))
       );
     }
   });
@@ -71,7 +79,7 @@ export async function publishCommand(): Promise<void> {
   }
 
   for (const mod of toPublish) {
-    await pushChanges(mod);
+    await pushChanges(mod.path);
   }
 
   for (const mod of toPublish) {
@@ -83,6 +91,10 @@ export async function publishCommand(): Promise<void> {
       cwd: project.rootDir
     });
   }
+
+  const rootReleaseTag = ROOT_REPO_RELEASE_TAG_PREFIX + new Date().valueOf();
+  await tagHead(project.rootDir, rootReleaseTag);
+  await pushChanges(project.rootDir);
 }
 
 
@@ -105,9 +117,9 @@ async function getPublishedPackageMetaInfo(packageName: string, version: string)
 }
 
 
-async function pushChanges(mod: LocalModule) {
+async function pushChanges(dir: string) {
   await runCommand("git", [ "push", "origin", "--follow-tags" ], {
-    cwd: mod.path
+    cwd: dir
   });
 }
 
