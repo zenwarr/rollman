@@ -10,6 +10,7 @@ function getCommandTitle(command: string, args: string[], options?: child_proces
 
 export type CommandOptions = child_process.SpawnOptions & {
   silent?: boolean;
+  ignoreExitCode?: boolean;
 };
 
 
@@ -32,7 +33,7 @@ export async function runCommand(command: string, args: string[], options?: Comm
     }
 
     proc.on("close", code => {
-      if (code === 0) {
+      if (code === 0 || options?.ignoreExitCode === true) {
         resolve(output);
       } else {
         if (output) {

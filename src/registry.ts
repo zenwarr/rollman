@@ -14,7 +14,8 @@ export async function getPublishedPackageInfo(packageName: string): Promise<Publ
 
   let output = await getCommandOutput(getNpmExecutable(), [ "view", "--json", packageName ], {
     silent: true,
-    cwd: project.rootDir
+    cwd: project.rootDir,
+    ignoreExitCode: true
   });
   if (!output) {
     return undefined;
