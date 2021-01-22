@@ -152,6 +152,10 @@ export async function getCommitsSinceLastPublish(mod: LocalModule): Promise<Repo
  */
 export async function hasUncommittedChanges(dir: string): Promise<boolean> {
   try {
+    await runCommand("git", [ "update-index", "--refresh" ], {
+      cwd: dir
+    });
+
     await getCommandOutput("git", [ "diff-index", "--quiet", "HEAD", "--exit-code" ], {
       cwd: dir
     });
