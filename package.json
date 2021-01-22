@@ -23,27 +23,27 @@
   },
   "homepage": "https://github.com/zenwarr/rollman#readme",
   "devDependencies": {
-    "@types/argparse": "^1.0.38",
+    "@types/argparse": "^2.0.5",
     "@types/columnify": "^1.5.0",
-    "@types/fs-extra": "^9.0.1",
+    "@types/fs-extra": "^9.0.8",
     "@types/glob": "^7.1.3",
-    "@types/node": "^14.0.24",
+    "@types/node": "^14.14.35",
     "@types/pluralize": "^0.0.29",
     "@types/prompts": "^2.0.8",
     "@types/semver": "^7.3.1",
     "@types/standard-version": "^7.0.0",
-    "@typescript-eslint/eslint-plugin": "^4.1.0",
-    "@typescript-eslint/eslint-plugin-tslint": "^4.1.0",
-    "@typescript-eslint/parser": "^4.1.0",
+    "@typescript-eslint/eslint-plugin": "^4.18.0",
+    "@typescript-eslint/eslint-plugin-tslint": "^4.18.0",
+    "@typescript-eslint/parser": "^4.18.0",
     "eslint": "^7.8.1",
     "eslint-plugin-import": "^2.22.0",
-    "eslint-plugin-jsdoc": "^30.3.3",
-    "eslint-plugin-prefer-arrow": "^1.2.2",
+    "eslint-plugin-jsdoc": "^32.3.0",
+    "eslint-plugin-prefer-arrow": "^1.2.3",
     "ts-node": "^9.0.0",
-    "typescript": "^4.0.2"
+    "typescript": "^4.2.3"
   },
   "dependencies": {
-    "argparse": "^1.0.10",
+    "argparse": "^2.0.1",
     "chalk": "^4.1.0",
     "columnify": "^1.5.4",
     "fs-extra": "^9.0.1",
@@ -52,7 +52,7 @@
     "pluralize": "^8.0.0",
     "prompts": "^2.3.2",
     "semver": "^7.3.2",
-    "standard-version": "^9.0.0"
+    "standard-version": "^9.1.1"
   },
   "bin": {
     "rollman": "./rollman.js"

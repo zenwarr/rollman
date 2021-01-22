@@ -3,14 +3,14 @@ import * as argparse from "argparse";
 
 
 const parser = new argparse.ArgumentParser();
-parser.addArgument("--dir", {
+parser.add_argument("--dir", {
   dest: "dir"
 });
-parser.addArgument("--prerelease", {
+parser.add_argument("--prerelease", {
   dest: "prerelease"
 });
 
-const args: { dir: string; prerelease?: string } = parser.parseArgs();
+const args: { dir: string; prerelease?: string } = parser.parse_args();
 
 process.chdir(args.dir);
 

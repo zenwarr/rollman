@@ -2,20 +2,22 @@ import { walkModules } from "../dependencies";
 import { getYarnExecutable, runCommand } from "../process";
 import { getArgs } from "../arguments";
 import { getManifestManager } from "../manifest-manager";
-import assert = require("assert");
 import { LocalModule } from "../local-module";
 import {
   changedSincePublish,
   changedSinceVersionCommit, dependsOnOneOf
 } from "../git";
 import { getProject, shouldForcePublish } from "../project";
+import assert = require("assert");
 
 
 export async function eachCommand() {
   const args = getArgs();
   const project = getProject();
 
-  assert(args.subCommand === "each");
+  if (args.subCommand !== "each") {
+    throw new Error("expected subcommand to equal 'each'");
+  }
 
   const changedModules: LocalModule[] = [];
 
