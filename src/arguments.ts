@@ -39,7 +39,7 @@ export class ArgumentsManager {
     });
     argparser.add_argument("--verbose", {
       help: "Verbose child process output",
-      action: "storeTrue",
+      action: "store_true",
       default: false,
       dest: "verbose"
     });
@@ -56,13 +56,13 @@ export class ArgumentsManager {
     const eachParser = subparsers.add_parser("each", { help: "Execute yarn with given parameters in each module" });
     eachParser.add_argument("--changed", {
       help: "Only for modules that has new commits since the last version commit",
-      action: "storeTrue",
+      action: "store_true",
       default: false,
       dest: "changedOnly"
     });
     eachParser.add_argument("--not-published", {
       help: "Only for modules that has new commits since the last published commit",
-      action: "storeTrue",
+      action: "store_true",
       default: false,
       dest: "notPublishedOnly"
     });
@@ -80,12 +80,12 @@ export class ArgumentsManager {
       help: "Generate prerelease versions",
       dest: "prerelease"
     });
-    // publishParser.add_argument("--dry-run", {
-    //   help: "Do not actually publish or commit anything",
-    //   action: "storeTrue",
-    //   default: false,
-    //   dest: "dryRun"
-    // });
+    publishParser.add_argument("--dry-run", {
+      help: "Do not actually publish or push anything (commits still will be made)",
+      action: "store_true",
+      default: false,
+      dest: "dryRun"
+    });
 
     let args: Arguments = argparser.parse_args();
     this._args = args;
