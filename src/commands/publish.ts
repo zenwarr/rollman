@@ -1,15 +1,14 @@
 import { walkModules } from "../dependencies";
 import { LocalModule } from "../local-module";
-import { changedSincePublish, dependsOnOneOf, isFileChangedSincePrefixedTag, isGitRepo, tagHead } from "../git";
+import { changedSincePublish, dependsOnOneOf, isGitRepo, tagHead } from "../git";
 import { fork, getNpmExecutable, runCommand } from "../process";
 import { getProject, ROOT_REPO_RELEASE_TAG_PREFIX, shouldForcePublish } from "../project";
 import { getManifestManager } from "../manifest-manager";
 import { generateLockFile } from "lockfile-generator";
-import { getMetaInfo, MetaInfo } from "lockfile-generator/declarations/lib/MetaInfoResolver";
+import { MetaInfo } from "lockfile-generator/declarations/lib/MetaInfoResolver";
 import { getPublishedPackageInfo } from "../registry";
 import * as semver from "semver";
 import { getArgs } from "../arguments";
-import * as assert from "assert";
 import * as path from "path";
 import * as fs from "fs-extra";
 

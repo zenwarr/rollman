@@ -1,4 +1,4 @@
-import { getCommandOutput, getNpmExecutable, getYarnExecutable } from "./process";
+import { getCommandOutput, getNpmExecutable} from "./process";
 import { getProject } from "./project";
 
 
