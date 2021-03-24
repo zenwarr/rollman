@@ -99,7 +99,9 @@ export async function publishCommand(): Promise<void> {
           fs.mkdirSync(path.join(mod.path, parentDir), { recursive: true });
         }
 
-        fs.moveSync(path.join(mod.path, "package-lock.json"), path.join(mod.path, args.lockfileCopyPath));
+        fs.moveSync(path.join(mod.path, "package-lock.json"), path.join(mod.path, args.lockfileCopyPath), {
+          overwrite: true
+        });
       }
     }
   }
