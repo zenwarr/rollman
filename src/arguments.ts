@@ -22,6 +22,7 @@ export type Arguments = {
   lockfileCopyPath?: string;
   prerelease?: string;
   dryRun: boolean;
+  lockfileCheckProperty?: string;
 });
 
 
@@ -29,6 +30,7 @@ export class ArgumentsManager {
   public get args() {
     return this._args;
   }
+
 
   public constructor() {
     let argparser = new argparse.ArgumentParser({
@@ -85,6 +87,10 @@ export class ArgumentsManager {
       action: "store_true",
       default: false,
       dest: "dryRun"
+    });
+    publishParser.add_argument("--lockfile-check-prop", {
+      help: "Set property to act like `alwaysUpdateLockFile` in package manifest",
+      dest: "lockfileCheckProperty"
     });
 
     let args: Arguments = argparser.parse_args();

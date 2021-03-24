@@ -11,6 +11,7 @@ import * as semver from "semver";
 import { getArgs } from "../arguments";
 import * as path from "path";
 import * as fs from "fs-extra";
+import * as _ from "lodash";
 
 
 async function moduleShouldBePublished(mod: LocalModule, dirtyModules: LocalModule[]): Promise<boolean> {
@@ -89,7 +90,7 @@ export async function publishCommand(): Promise<void> {
     await fork(require.resolve("../release/semantic-version"), semanticVersionArgs);
     newVersions.set(mod, getCurrentPackageVersion(mod.path));
 
-    if (project.options.useLockFiles && mod.alwaysUpdateLockFile) {
+    if (project.options.useLockFiles && (mod.alwaysUpdateLockFile || shouldUpdateLockfileForModule(mod, args.lockfileCheckProperty))) {
       await generateLockFile(mod.path, localModulesMeta);
 
       if (args.lockfileCopyPath) {
@@ -134,6 +135,16 @@ export async function publishCommand(): Promise<void> {
       await pushChanges(project.rootDir, args.dryRun);
     }
   }
+}
+
+
+function shouldUpdateLockfileForModule(mod: LocalModule, checkProperty: string | undefined): boolean {
+  if (!checkProperty) {
+    return false;
+  }
+
+  const manifest = getManifestManager().readPackageManifest(mod.path);
+  return !!(_.get(manifest, checkProperty));
 }
 
 
