@@ -155,6 +155,10 @@ function updateManifestDeps(mod: LocalModule, newVersions: Map<LocalModule, stri
 
   function fixDep(deps: any, dep: string, newVersion: string) {
     const existingRange = deps[dep];
+    if (!existingRange) {
+      return;
+    }
+
     if (!semver.satisfies(newVersion, existingRange)) {
       deps[dep] = `^${ newVersion }`;
     }
