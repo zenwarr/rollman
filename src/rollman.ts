@@ -9,6 +9,8 @@ import { publishCommand } from "./commands/publish";
 
 
 async function asyncStart(): Promise<void> {
+  console.log(`rollman v${ require("../package.json").version }`);
+
   let args = getArgs();
 
   Project.init();
