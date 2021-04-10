@@ -12,11 +12,19 @@ import { getArgs } from "../arguments";
 import * as path from "path";
 import * as fs from "fs-extra";
 import * as _ from "lodash";
+import { timeout } from "../utils";
 
 
-async function moduleShouldBePublished(mod: LocalModule, dirtyModules: LocalModule[]): Promise<boolean> {
+async function moduleShouldBePublished(globalLockfileChanged: boolean, mod: LocalModule, dirtyModules: LocalModule[]): Promise<boolean> {
   if (!mod.useNpm || !await isGitRepo(mod.path)) {
     return false;
+  }
+
+  const project = getProject();
+  const publishIfSourceNotChanged = mod.config.publishIfSourceNotChanged ?? project.options.publishIfSourceNotChanged;
+  if (globalLockfileChanged && publishIfSourceNotChanged) {
+    dirtyModules.push(mod);
+    return true;
   }
 
   if (await changedSincePublish(mod)) {
@@ -24,7 +32,7 @@ async function moduleShouldBePublished(mod: LocalModule, dirtyModules: LocalModu
     return true;
   }
 
-  if (dependsOnOneOf(mod, dirtyModules)) {
+  if (dependsOnOneOf(mod, dirtyModules) && publishIfSourceNotChanged) {
     dirtyModules.push(mod);
     return true;
   }
@@ -64,7 +72,7 @@ export async function publishCommand(): Promise<void> {
   }
 
   await walkModules(async mod => {
-    if (lockfileChanged || await moduleShouldBePublished(mod, dirtyModules) || shouldChangeVersion(mod, args.prerelease)) {
+    if (await moduleShouldBePublished(lockfileChanged, mod, dirtyModules) || shouldChangeVersion(mod, args.prerelease)) {
       toPublish.push(mod);
     } else {
       console.log(`Module ${ mod.formattedName } has no changes since last published version, skipping`);
@@ -193,14 +201,24 @@ async function getPublishedPackageMetaInfo(packageName: string, version: string)
 
 
 async function pushChanges(dir: string, dryRun: boolean) {
+  const TRY_COUNT = 5;
+
   const args = [ "push", "origin", "--follow-tags" ];
 
   if (dryRun) {
     console.log("->", ...args);
   } else {
-    await runCommand("git", args, {
-      cwd: dir
-    });
+    for (let q = 0; q < TRY_COUNT; ++q) {
+      try {
+        await runCommand("git", args, {
+          cwd: dir
+        });
+        return;
+      } catch (error) {
+        console.log(`Failed to push: ${ error.message }, repeating command in 1s...`);
+        await timeout(1000);
+      }
+    }
   }
 }
 

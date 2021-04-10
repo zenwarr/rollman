@@ -14,28 +14,37 @@ export interface ProjectOptions {
   alwaysUpdateLockFile: boolean;
   useGitTags: boolean;
   releaseBranches: string[];
+  publishIfSourceNotChanged: boolean;
 }
+
+
+export const DEFAULT_PUBLISH_IF_SOURCE_NOT_CHANGED = true;
 
 
 export class Project {
   public constructor(private _rootDir: string, private _modules: LocalModule[], private _options: ProjectOptions) {
   }
 
+
   public get modules() {
     return this._modules;
   }
+
 
   public get options() {
     return this._options;
   }
 
+
   public get rootDir() {
     return this._rootDir;
   }
 
+
   public getModule(moduleName: string): LocalModule | null {
     return this._modules.find(module => module.name && module.name.name === moduleName) || null;
   }
+
 
   public getModuleChecked(moduleName: string): LocalModule {
     let mod = this.getModule(moduleName);
@@ -45,6 +54,7 @@ export class Project {
 
     return mod;
   }
+
 
   public static loadProject(startDir: string): Project {
     let projectDir = this.findProjectDir(startDir);
@@ -84,12 +94,18 @@ export class Project {
       releaseBranches = [ DEFAULT_RELEASE_BRANCH ];
     }
 
+    let publishIfSourceNotChanged = manifest.rollman?.publishIfSourceNotChanged;
+    if (publishIfSourceNotChanged != null && typeof publishIfSourceNotChanged !== "boolean") {
+      throw new Error(`Invalid "rollman.publishIfSourceNotChanged" param in ${ projectDir }/package.json: should be a boolean`);
+    }
+
     let modules = [ ...packagePaths.values() ].map(packagePath => LocalModule.createFromPackage(packagePath));
     return new Project(projectDir, modules, {
       useLockFiles,
       useGitTags,
       alwaysUpdateLockFile,
-      releaseBranches
+      releaseBranches,
+      publishIfSourceNotChanged: publishIfSourceNotChanged ?? DEFAULT_PUBLISH_IF_SOURCE_NOT_CHANGED
     });
   }
 

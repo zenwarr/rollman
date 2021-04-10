@@ -14,6 +14,7 @@ export interface LocalModuleConfig {
   name: ModuleNpmName | undefined;
   useNpm: boolean;
   releaseBranches?: string[];
+  publishIfSourceNotChanged?: boolean;
 }
 
 
@@ -21,6 +22,7 @@ export class LocalModule {
   public get name() {
     return this._config.name;
   }
+
 
   public get checkedName() {
     if (!this._config.name) {
@@ -30,21 +32,26 @@ export class LocalModule {
     return this._config.name;
   }
 
+
   public get formattedName() {
     return this._config.name ? this._config.name.name : this.path;
   }
+
 
   public get path() {
     return this._config.path;
   }
 
+
   public get useNpm() {
     return this._config.useNpm;
   }
 
+
   public get config() {
     return this._config;
   }
+
 
   public get alwaysUpdateLockFile(): boolean {
     const manifest = getManifestManager().readPackageManifest(this.path);
@@ -71,11 +78,17 @@ export class LocalModule {
         throw new Error(`Invalid "rollman.releaseBranches" param in ${ packagePath }/package.json: should be an array of strings`);
       }
 
+      const publishIfSourceNotChanged = manifest.rollman?.publishIfSourceNotChanged;
+      if (publishIfSourceNotChanged != null && typeof publishIfSourceNotChanged !== "boolean") {
+        throw new Error(`Invalid "rollman.publishIfSourceNotChanged" param in ${ packagePath }/package.json: should be a boolean`);
+      }
+
       return new LocalModule({
         path: packagePath,
         name: npmNameFromPackageName(manifest.name),
         useNpm: true,
-        releaseBranches
+        releaseBranches,
+        publishIfSourceNotChanged
       });
     }
   }

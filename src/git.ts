@@ -62,16 +62,16 @@ async function listCommits(dir: string): Promise<Commit[]> {
   });
 
   return output
-  .split("\n")
-  .filter(line => !line.startsWith("commit ") && line)
-  .map(line => {
-    const spaceIndex = line.indexOf(" ");
-    let hash = line.slice(0, spaceIndex);
-    return {
-      hash,
-      message: line.slice(spaceIndex + 1)
-    };
-  });
+    .split("\n")
+    .filter(line => !line.startsWith("commit ") && line)
+    .map(line => {
+      const spaceIndex = line.indexOf(" ");
+      let hash = line.slice(0, spaceIndex);
+      return {
+        hash,
+        message: line.slice(spaceIndex + 1)
+      };
+    });
 }
 
 
@@ -291,16 +291,16 @@ export interface TagInfo {
 export async function listTags(dir: string): Promise<TagInfo[]> {
   try {
     return (await getCommandOutput("git", [ "show-ref", "--tags", "--dereference" ], { cwd: dir }))
-    .split("\n")
-    .filter(line => line.endsWith("^{}") && line)
-    .map(line => {
-      const spaceIndex = line.indexOf(" ");
-      return {
-        hash: line.slice(0, spaceIndex),
-        name: line.slice(spaceIndex + 1 + "refs/tags/".length, -"^{}".length)
-      };
-    })
-    .reverse();
+      .split("\n")
+      .filter(line => line.endsWith("^{}") && line)
+      .map(line => {
+        const spaceIndex = line.indexOf(" ");
+        return {
+          hash: line.slice(0, spaceIndex),
+          name: line.slice(spaceIndex + 1 + "refs/tags/".length, -"^{}".length)
+        };
+      })
+      .reverse();
   } catch (error) {
     if (error.exitCode === 1) {
       // show-ref returns 1 exit code if nothing matches the request https://linux.die.net/man/1/git-show-ref
