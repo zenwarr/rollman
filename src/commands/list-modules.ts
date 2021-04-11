@@ -1,4 +1,4 @@
-import * as columnify from "columnify";
+import columnify from "columnify";
 import { walkModules } from "../dependencies";
 import { getManifestManager } from "../manifest-manager";
 

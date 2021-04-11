@@ -1,5 +1,5 @@
 import * as child_process from "child_process";
-import * as chalk from "chalk";
+import chalk from "chalk";
 
 
 function getCommandTitle(command: string, args: string[], options?: child_process.SpawnOptions): string {
@@ -11,6 +11,7 @@ function getCommandTitle(command: string, args: string[], options?: child_proces
 export type CommandOptions = child_process.SpawnOptions & {
   silent?: boolean;
   ignoreExitCode?: boolean;
+  transformOutput?: (output: string) => string;
 };
 
 
@@ -23,13 +24,25 @@ export async function runCommand(command: string, args: string[], options?: Comm
     }
 
     let proc = child_process.spawn(command, args, {
-      stdio: "inherit",
+      stdio: options?.transformOutput ? [ "ignore", "pipe", "pipe" ] : "inherit",
       ...options
     } as const);
 
     let output = "";
     if (proc.stdout) {
-      proc.stdout.on("data", text => output += text);
+      proc.stdout.on("data", text => {
+        output += text;
+
+        if (options?.transformOutput) {
+          console.log(options.transformOutput(text.toString()));
+        }
+      });
+    }
+
+    if (proc.stderr && options?.transformOutput) {
+      proc.stderr.on("data", text => {
+        console.error(options.transformOutput!(text.toString()));
+      });
     }
 
     proc.on("close", code => {

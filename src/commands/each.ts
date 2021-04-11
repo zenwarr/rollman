@@ -8,7 +8,11 @@ import {
   changedSinceVersionCommit, dependsOnOneOf
 } from "../git";
 import { getProject, shouldForcePublish } from "../project";
-import assert = require("assert");
+import assert from "assert";
+import PromisePool from "@supercharge/promise-pool";
+import * as os from "os";
+import chalk from "chalk";
+import { log } from "util";
 
 
 export async function eachCommand() {
@@ -56,24 +60,27 @@ export async function eachCommand() {
 
   const scriptName = args.args[0];
 
+  const moduleNames = getProject().modules.map(mod => mod.checkedName.name);
+
   let modulesProcessed = 0;
   if (scriptName === "--") {
     if (args.args.length < 2) {
       throw new Error("Not enough arguments: expected at least one after --");
     }
 
-    await walkModules(async mod => {
+    await runWithModules(args.parallel, async mod => {
       if (await shouldBeSkipped(mod)) {
         return;
       }
 
       ++modulesProcessed;
       await runCommand(args.args[1], args.args.slice(2), {
-        cwd: mod.path
+        cwd: mod.path,
+        transformOutput: args.parallel ? output => withLinePrefix(moduleNames, mod.checkedName.name, output) : undefined
       });
     });
   } else {
-    await walkModules(async mod => {
+    await runWithModules(args.parallel, async mod => {
       if (!mod.useNpm) {
         return;
       }
@@ -90,12 +97,45 @@ export async function eachCommand() {
       }
 
       await runCommand(getYarnExecutable(), args.args, {
-        cwd: mod.path
+        cwd: mod.path,
+        transformOutput: args.parallel ? output => withLinePrefix(moduleNames, mod.checkedName.name, output) : undefined
       });
     });
   }
 
   if (!modulesProcessed) {
     console.log("Complete, no modules processed");
+  }
+}
+
+
+function withLinePrefix(names: string[], name: string, output: string): string {
+  const maxLength = Math.max(...names.map(name => name.length));
+  const prefix = name.padEnd(maxLength, " ");
+
+  return output.split("\n").map(line => `${ chalk.blue(prefix) } | ${ line }`).join("\n");
+}
+
+
+async function runWithModules(parallel: boolean, walker: (mod: LocalModule) => Promise<void>) {
+  if (parallel) {
+    const modules: LocalModule[] = [];
+
+    await walkModules(async mod => {
+      modules.push(mod);
+    });
+
+    const result = await PromisePool.withConcurrency(os.cpus().length).for(modules).process(walker);
+    for (const err in result.errors) {
+      console.error(`Task executed with error: ${ err }`);
+    }
+
+    if (result.errors.length) {
+      throw new Error("Some tasks completed with errors");
+    }
+  } else {
+    await walkModules(async mod => {
+      return walker(mod);
+    });
   }
 }

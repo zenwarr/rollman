@@ -60,6 +60,18 @@
     "@nodelib/fs.scandir" "2.1.4"
     fastq "^1.6.0"
 
+"@supercharge/goodies@~1.8.0":
+  version "1.8.0"
+  resolved "https://registry.npmjs.org/@supercharge/goodies/-/goodies-1.8.0.tgz#8211e8779e77871f356f234a4aff97011e012f36"
+  integrity sha512-2CVM584Z1J/pyOS95qhFmQ0RFm3Y3kia3lydLFw0o0UgRd29vhyhheRKcJaGTQf5I3HJGdRoLLWVkrWuObwz1w==
+
+"@supercharge/promise-pool@^1.6.2":
+  version "1.6.2"
+  resolved "https://registry.npmjs.org/@supercharge/promise-pool/-/promise-pool-1.6.2.tgz#329b6b9906331414e693d228fa1ed75e2a8ca514"
+  integrity sha512-uEVX5L6L+ai2SLpe2U2y0UrlJIVGaq/iZIUtXeSW3XORoXhvleRb9viRD0cJm00bH2HV89jnxR+vMflCeyvxGw==
+  dependencies:
+    "@supercharge/goodies" "~1.8.0"
+
 "@types/argparse@^2.0.5":
   version "2.0.5"
   resolved "https://registry.npmjs.org/@types/argparse/-/argparse-2.0.5.tgz#5192f160931442a32c1c23e9480fff3f8d7cd0e4"

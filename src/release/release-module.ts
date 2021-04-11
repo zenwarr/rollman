@@ -9,9 +9,9 @@ import {
   RepositoryChangesInfo,
   stageAllAndCommit
 } from "../git";
-import * as prompts from "prompts";
-import * as chalk from "chalk";
-import * as pluralize from "pluralize";
+import prompts from "prompts";
+import chalk from "chalk";
+import pluralize from "pluralize";
 import * as semver from "semver";
 import { generateLockFile } from "lockfile-generator";
 

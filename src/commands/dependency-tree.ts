@@ -1,6 +1,6 @@
 import { LocalModule } from "../local-module";
 import { getDirectModuleDeps, walkModules } from "../dependencies";
-import * as columnify from "columnify";
+import columnify from "columnify";
 
 
 export async function dependencyTreeCommand() {

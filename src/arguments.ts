@@ -16,6 +16,7 @@ export type Arguments = {
   subCommand: "each";
   changedOnly: boolean;
   notPublishedOnly: boolean;
+  parallel: boolean;
   args: string[];
 } | {
   subCommand: "publish";
@@ -67,6 +68,12 @@ export class ArgumentsManager {
       action: "store_true",
       default: false,
       dest: "notPublishedOnly"
+    });
+    eachParser.add_argument("-p", "--parallel", {
+      help: "Run commands in parallel (can break if modules depend on each other)",
+      action: "store_true",
+      default: false,
+      dest: "parallel"
     });
     eachParser.add_argument("args", {
       help: "yarn arguments",

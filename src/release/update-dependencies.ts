@@ -4,8 +4,8 @@ import { getProject } from "../project";
 import { cancelRelease, ReleaseContext } from "./release-context";
 import { getManifestManager } from "../manifest-manager";
 import * as semver from "semver";
-import * as prompts from "prompts";
-import * as chalk from "chalk";
+import prompts from "prompts";
+import chalk from "chalk";
 import { generateLockFile } from "lockfile-generator";
 import { hasUncommittedChanges, isGitRepo, stageAllAndCommit } from "../git";
 

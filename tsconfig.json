@@ -5,13 +5,13 @@
     "strictNullChecks": true,
     "module": "commonjs",
     "target": "ES2017",
-    "esModuleInterop": false,
+    "esModuleInterop": true,
     "noEmitOnError": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,
     "strict": true,
     "declaration": true,
-    "declarationDir": "declarations"
+    "declarationDir": "declarations",
   },
   "exclude": [
     "declarations/**/*.*"

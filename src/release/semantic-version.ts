@@ -1,4 +1,4 @@
-import * as standardVersion from "standard-version";
+import standardVersion from "standard-version";
 import * as argparse from "argparse";
 
 

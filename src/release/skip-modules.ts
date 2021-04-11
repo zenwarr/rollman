@@ -1,7 +1,7 @@
 import { LocalModule } from "../local-module";
 import { ModuleDep, WalkerAction, walkModules } from "../dependencies";
-import * as prompts from "prompts";
-import * as chalk from "chalk";
+import prompts from "prompts";
+import chalk from "chalk";
 import { cancelRelease, ReleaseContext } from "./release-context";
 import { hasUncommittedChanges, isGitRepo } from "../git";
 

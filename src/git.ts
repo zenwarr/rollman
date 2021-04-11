@@ -1,5 +1,5 @@
 import * as semver from "semver";
-import * as chalk from "chalk";
+import chalk from "chalk";
 import { LocalModule } from "./local-module";
 import { getCommandOutput, runCommand } from "./process";
 import { getDirectModuleDeps } from "./dependencies";
