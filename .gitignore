@@ -12,3 +12,5 @@ todo.md
 !.yarn/sdks
 !.yarn/versions
 .pnp.*
+!src/recommended-bump/*.js
+yarn-error.log

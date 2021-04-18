@@ -12,6 +12,7 @@
     "strict": true,
     "declaration": true,
     "declarationDir": "declarations",
+    "allowJs": true
   },
   "exclude": [
     "declarations/**/*.*"

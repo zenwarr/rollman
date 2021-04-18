@@ -13,9 +13,8 @@ import * as path from "path";
 import * as fs from "fs-extra";
 import * as _ from "lodash";
 import gitSemverTags from "git-semver-tags";
-import conventionalRecommendedBump from "conventional-recommended-bump";
+import conventionalRecommendedBump from "../recommended-bump";
 import { timeout } from "../utils";
-import Recommendation = conventionalRecommendedBump.Callback.Recommendation;
 import { Commit } from "conventional-commits-parser";
 import assert from "assert";
 
@@ -61,7 +60,7 @@ async function getCurrentVersionFromTags(dir: string): Promise<string> {
 
 
 async function getVersionAfterBump(dir: string, currentVersion: string, prerelease: string | undefined, localUpdates: string[]): Promise<[ version: string, reason: string[] ]> {
-  const rec = await new Promise<Recommendation & { commitCount: number }>((resolve, reject) => {
+  const rec = await new Promise<any & { commitCount: number }>((resolve, reject) => {
     conventionalRecommendedBump({
       cwd: dir,
       whatBump: (commits: Commit[]) => {
@@ -89,7 +88,7 @@ async function getVersionAfterBump(dir: string, currentVersion: string, prerelea
           commitCount: commits.length
         };
       }
-    } as any, (err, result) => {
+    } as any, (err: Error | null, result: any) => {
       if (err != null) {
         reject(err);
       } else {
