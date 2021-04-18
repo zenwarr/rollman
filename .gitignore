@@ -5,3 +5,10 @@ node_modules
 declarations
 todo.md
 .npmrc
+.yarn/*
+!.yarn/patches
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+.pnp.*

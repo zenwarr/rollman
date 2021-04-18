@@ -12,7 +12,6 @@ import assert from "assert";
 import PromisePool from "@supercharge/promise-pool";
 import * as os from "os";
 import chalk from "chalk";
-import { log } from "util";
 
 
 export async function eachCommand() {
@@ -126,7 +125,7 @@ async function runWithModules(parallel: boolean, walker: (mod: LocalModule) => P
     });
 
     const result = await PromisePool.withConcurrency(os.cpus().length).for(modules).process(walker);
-    for (const err in result.errors) {
+    for (const err of result.errors) {
       console.error(`Task executed with error: ${ err }`);
     }
 
@@ -134,8 +133,6 @@ async function runWithModules(parallel: boolean, walker: (mod: LocalModule) => P
       throw new Error("Some tasks completed with errors");
     }
   } else {
-    await walkModules(async mod => {
-      return walker(mod);
-    });
+    await walkModules(async mod => walker(mod));
   }
 }

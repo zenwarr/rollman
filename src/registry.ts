@@ -6,6 +6,7 @@ export interface PublishedPackageInfo {
   versions: string[];
   integrity?: string;
   tarball?: string;
+  manifest: any;
 }
 
 
@@ -31,7 +32,8 @@ export async function getPublishedPackageInfo(packageName: string): Promise<Publ
   return {
     versions: parsedOutput.versions,
     integrity: parsedOutput.dist?.integrity,
-    tarball: parsedOutput.dist?.tarball
+    tarball: parsedOutput.dist?.tarball,
+    manifest: parsedOutput
   };
 }
 

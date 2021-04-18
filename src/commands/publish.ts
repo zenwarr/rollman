@@ -1,65 +1,182 @@
-import { walkModules } from "../dependencies";
+import { getDirectModuleDeps, walkModules } from "../dependencies";
 import { LocalModule } from "../local-module";
-import { changedSincePublish, dependsOnOneOf, isGitRepo, tagHead } from "../git";
-import { fork, getNpmExecutable, runCommand } from "../process";
+import { tagHead } from "../git";
+import { getNpmExecutable, runCommand } from "../process";
 import { getProject, ROOT_REPO_RELEASE_TAG_PREFIX, shouldForcePublish } from "../project";
 import { getManifestManager } from "../manifest-manager";
 import { generateLockFile } from "lockfile-generator";
 import { MetaInfo } from "lockfile-generator/declarations/lib/MetaInfoResolver";
-import { getPublishedPackageInfo } from "../registry";
+import { getPublishedPackageInfo, isVersionPublished } from "../registry";
 import * as semver from "semver";
 import { getArgs } from "../arguments";
 import * as path from "path";
 import * as fs from "fs-extra";
 import * as _ from "lodash";
+import gitSemverTags from "git-semver-tags";
+import conventionalRecommendedBump from "conventional-recommended-bump";
 import { timeout } from "../utils";
+import Recommendation = conventionalRecommendedBump.Callback.Recommendation;
+import { Commit } from "conventional-commits-parser";
+import assert from "assert";
 
 
-async function moduleShouldBePublished(globalLockfileChanged: boolean, mod: LocalModule, dirtyModules: LocalModule[]): Promise<boolean> {
-  if (!mod.useNpm || !await isGitRepo(mod.path)) {
-    return false;
-  }
-
+function shouldPublishIfSourceNotChanged(mod: LocalModule): boolean {
   const project = getProject();
-  const publishIfSourceNotChanged = mod.config.publishIfSourceNotChanged ?? project.options.publishIfSourceNotChanged;
-  if (globalLockfileChanged && publishIfSourceNotChanged) {
-    dirtyModules.push(mod);
-    return true;
-  }
-
-  if (await changedSincePublish(mod)) {
-    dirtyModules.push(mod);
-    return true;
-  }
-
-  if (dependsOnOneOf(mod, dirtyModules) && publishIfSourceNotChanged) {
-    dirtyModules.push(mod);
-    return true;
-  }
-
-  return false;
+  return mod.config.publishIfSourceNotChanged ?? project.options.publishIfSourceNotChanged;
 }
 
 
-/**
- * If we are switching from prerelease versions to release, we should always remove prerelease from version and set release version.
- * This function returns true if this is the case and we should force-change current version even if there are no changes.
- */
-function shouldChangeVersion(mod: LocalModule, prerelease: string | undefined): boolean {
-  const currentVersion = getCurrentPackageVersion(mod.path);
-  if (semver.prerelease(currentVersion) && !prerelease) {
-    return true;
+async function getSemverTags(dir: string) {
+  return new Promise<string[]>((resolve, reject) => {
+    gitSemverTags({
+      cwd: dir
+    } as any, (err, result) => {
+      if (err != null) {
+        reject(err);
+      } else {
+        resolve(result);
+      }
+    });
+  });
+}
+
+
+async function getCurrentVersionFromTags(dir: string): Promise<string> {
+  const semverTags = (await getSemverTags(dir))
+    .map(tag => tag.startsWith("v") ? tag.slice(1) : tag)
+    .sort((a, b) => {
+      if (semver.eq(a, b)) {
+        return 0;
+      } else {
+        return semver.gt(a, b) ? -1 : 1;
+      }
+    });
+
+  let currentVersion = semverTags[0];
+
+  assert(currentVersion != null);
+
+  return currentVersion;
+}
+
+
+async function getVersionAfterBump(dir: string, currentVersion: string, prerelease: string | undefined, localUpdates: string[]): Promise<[ version: string, reason: string[] ]> {
+  const rec = await new Promise<Recommendation & { commitCount: number }>((resolve, reject) => {
+    conventionalRecommendedBump({
+      cwd: dir,
+      whatBump: (commits: Commit[]) => {
+        let level = 2;
+        let breakings = 0;
+        let features = 0;
+
+        commits.forEach(commit => {
+          if (commit.notes.length > 0) {
+            breakings += commit.notes.length;
+            level = 0;
+          } else if (commit.type === "feat" || commit.type === "feature") {
+            features += 1;
+            if (level === 2) {
+              level = 1;
+            }
+          }
+        });
+
+        return {
+          level,
+          reason: breakings === 1
+            ? `There is ${ breakings } BREAKING CHANGE and ${ features } features`
+            : `There are ${ breakings } BREAKING CHANGES and ${ features } features`,
+          commitCount: commits.length
+        };
+      }
+    } as any, (err, result) => {
+      if (err != null) {
+        reject(err);
+      } else {
+        resolve(result as any);
+      }
+    });
+  });
+
+  if (!rec.commitCount || !rec.releaseType) {
+    if (localUpdates.length) {
+      return [
+        bumpVersion(currentVersion, "patch", prerelease),
+        localUpdates
+      ];
+    } else {
+      const curIds = (semver.prerelease(currentVersion) ?? []).filter(x => typeof x === "string");
+      const wantedIds = prerelease != null ? [ prerelease ] : [];
+      if (!_.isEqual(curIds, wantedIds)) {
+        return [
+          bumpVersion(currentVersion, "patch", prerelease),
+          [ `prerelease ids differ: current are ${ curIds.join(", ") || "<none>" }, requested are ${ wantedIds.join(", ") || "<none>" }` ]
+        ];
+      } else {
+        return [
+          currentVersion,
+          [ "no reason found to change package version" ]
+        ];
+      }
+    }
+  } else {
+    return [
+      bumpVersion(currentVersion, rec.releaseType, prerelease),
+      [ `bumped by ${ rec.commitCount } semantic commits: ${ rec.reason }` ]
+    ];
+  }
+}
+
+
+function bumpVersion(version: string, bump: "minor" | "major" | "patch", prerelease: string | undefined) {
+  let bumped: string | null;
+  if (prerelease != null) {
+    bumped = semver.inc(version, "pre" + bump as semver.ReleaseType, prerelease);
+  } else {
+    bumped = semver.inc(version, bump);
   }
 
-  return false;
+  return bumped ?? version;
+}
+
+
+interface BumpInfo {
+  oldVersion: string;
+  newVersion: string;
+  versionTag?: string;
+}
+
+
+async function setNewVersion(mod: LocalModule, currentVersion: string, prerelease: string | undefined, localUpdates: string[]): Promise<BumpInfo> {
+  let [ newVersion, bumpReason ] = await getVersionAfterBump(mod.path, currentVersion, prerelease, localUpdates);
+
+  const manifest = await getManifestManager().readPackageManifest(mod.path);
+  manifest.version = newVersion;
+  getManifestManager().writePackageManifest(mod.path, manifest);
+
+  let versionTag: string | undefined;
+  if (currentVersion !== newVersion) {
+    const formattedBumpReason = bumpReason.map(reason => "  " + reason).join("\n");
+    console.log(`${ mod.checkedName.name }: bumping version (${ currentVersion } -> ${ newVersion }):\n${ formattedBumpReason }`);
+
+    versionTag = `v${ newVersion }`;
+    await tagHead(mod.path, newVersion);
+  } else {
+    console.log(`${ mod.checkedName.name }: no reason to bump version from ${ currentVersion }`);
+  }
+
+  return {
+    oldVersion: currentVersion,
+    newVersion,
+    versionTag
+  };
 }
 
 
 export async function publishCommand(): Promise<void> {
   const project = getProject();
-  const toPublish: LocalModule[] = [];
-  const dirtyModules: LocalModule[] = [];
   const localModulesMeta = new Map<string, MetaInfo>();
+  const dirtyModules: LocalModule[] = [];
 
   const args = getArgs();
   if (args.subCommand !== "publish") {
@@ -71,32 +188,19 @@ export async function publishCommand(): Promise<void> {
     console.log("Workspace root yarn.lock changed since latest release, forcing full update");
   }
 
+  console.log("Calculating new versions...");
+
+  const moduleVersions = new Map<LocalModule, BumpInfo>();
   await walkModules(async mod => {
-    if (await moduleShouldBePublished(lockfileChanged, mod, dirtyModules) || shouldChangeVersion(mod, args.prerelease)) {
-      toPublish.push(mod);
-    } else {
-      console.log(`Module ${ mod.formattedName } has no changes since last published version, skipping`);
-      localModulesMeta.set(
-        mod.checkedName.name,
-        await getPublishedPackageMetaInfo(mod.checkedName.name, getCurrentPackageVersion(mod.path))
-      );
-    }
-  });
+    // if module dependencies changes, we need to publish new version with another version number
+    // but we are not going to commit changes in `package.json`
+    // so we have to choose new version without help of conventional-commits
+    // and how to determine bump for new version when only dependencies changed?
+    // for example, if one of dependencies got a major bump, should we major bump this package too?
+    // it depends on internal application logic, so we cannot know
 
-  const newVersions = new Map<LocalModule, string>();
-
-  for (const mod of toPublish) {
-    if (dependsOnOneOf(mod, [ ...newVersions.keys() ])) {
-      updateManifestDeps(mod, newVersions);
-    }
-
-    let semanticVersionArgs = [ "--dir", mod.path ];
-    if (args.prerelease) {
-      semanticVersionArgs.push("--prerelease", args.prerelease);
-    }
-
-    await fork(require.resolve("../release/semantic-version"), semanticVersionArgs);
-    newVersions.set(mod, getCurrentPackageVersion(mod.path));
+    const currentVersion = await getCurrentVersionFromTags(mod.path);
+    let localUpdates: string[] = await updateManifestDeps(mod, currentVersion, moduleVersions);
 
     if (project.options.useLockFiles && (mod.alwaysUpdateLockFile || shouldUpdateLockfileForModule(mod, args.lockfileCheckProperty))) {
       await generateLockFile(mod.path, localModulesMeta);
@@ -111,39 +215,71 @@ export async function publishCommand(): Promise<void> {
           overwrite: true
         });
       }
+
+      // todo: only if lockfile changed
+      localUpdates.push("generated lockfile changed");
+    }
+
+    if (!localUpdates && shouldPublishIfSourceNotChanged(mod)) {
+      localUpdates = getDirectModuleDeps(mod, true)
+        .filter(dep => dirtyModules.includes(dep.mod))
+        .map(dep => `should be published if dependencies change, and module ${ dep.mod.checkedName.name } has changed`);
+    }
+
+    const bumpInfo = await setNewVersion(mod, currentVersion, args.prerelease, localUpdates);
+    moduleVersions.set(mod, bumpInfo);
+
+    if (bumpInfo.oldVersion !== bumpInfo.newVersion) {
+      dirtyModules.push(mod);
+    }
+  });
+
+  console.log("Pushing tags...");
+
+  let pushedCount = 0;
+  for (const [ mod, bump ] of moduleVersions.entries()) {
+    if (bump.versionTag) {
+      await pushTag(mod.path, bump.versionTag, args.dryRun);
+      ++pushedCount;
     }
   }
 
-  for (const mod of toPublish) {
-    if (args.dryRun) {
-      console.log(`(dry run): would push changes to module ${ mod.path }`);
-    } else {
-      await pushChanges(mod.path, args.dryRun);
-    }
+  if (!pushedCount) {
+    console.log("There are no tags to push");
   }
 
-  for (const mod of toPublish) {
-    const manifest = getManifestManager().readPackageManifest(mod.path);
-    const newVersion = manifest.version;
+  console.log("Publishing modules...");
 
-    const publishTag = await getPublishTag(mod.checkedName.name, newVersion);
+  let publishedCount = 0;
+  for (const mod of dirtyModules) {
+    const currentVersion = moduleVersions.get(mod)!.newVersion;
+    if (await isVersionPublished(mod.checkedName.name, currentVersion)) {
+      continue;
+    }
+
+    const publishTag = await getPublishTag(mod.checkedName.name, moduleVersions.get(mod)!.newVersion);
     let publishArgs = [ "publish", mod.path, "--tag", publishTag ];
     if (args.dryRun) {
       publishArgs.push("--dry-run");
     }
+
     await runCommand(getNpmExecutable(), publishArgs, {
       cwd: project.rootDir
     });
+
+    ++publishedCount;
+  }
+
+  if (!publishedCount) {
+    console.log("There are no modules to publish");
   }
 
   if (lockfileChanged) {
+    console.log("Publishing changed lockfile...");
+
     const rootReleaseTag = ROOT_REPO_RELEASE_TAG_PREFIX + new Date().valueOf();
     await tagHead(project.rootDir, rootReleaseTag);
-    if (args.dryRun) {
-      console.log("(dry run): would push changes to root repository");
-    } else {
-      await pushChanges(project.rootDir, args.dryRun);
-    }
+    await pushTag(project.rootDir, rootReleaseTag, args.dryRun);
   }
 }
 
@@ -158,26 +294,43 @@ function shouldUpdateLockfileForModule(mod: LocalModule, checkProperty: string |
 }
 
 
-function updateManifestDeps(mod: LocalModule, newVersions: Map<LocalModule, string>) {
+async function updateManifestDeps(mod: LocalModule, currentVersion: string, newVersions: Map<LocalModule, BumpInfo>): Promise<string[]> {
   const manifest = getManifestManager().readPackageManifest(mod.path);
+  const publishedManifest = await getPublishedPackageInfo(`${ mod.checkedName.name }@${ currentVersion }`);
+  let updates: string[] = [];
 
-  function fixDep(deps: any, dep: string, newVersion: string) {
+  function fixDep(manifest: any, depType: string, dep: string, newVersion: string) {
+    const deps = manifest[depType] ?? {};
+    const publishedDeps = publishedManifest?.manifest?.[depType] ?? {};
+
     const existingRange = deps[dep];
     if (!existingRange) {
       return;
     }
 
-    if (!semver.satisfies(newVersion, existingRange)) {
-      deps[dep] = `^${ newVersion }`;
+    let updatedRange = existingRange;
+    if (existingRange === "*") {
+      updatedRange = newVersion;
+    } else if (!semver.satisfies(newVersion, existingRange)) {
+      updatedRange = `^${ newVersion }`;
+    }
+
+    deps[dep] = updatedRange;
+
+    const publishedRange = publishedDeps[dep];
+    if (publishedManifest && publishedRange !== updatedRange) {
+      updates.push(`dependency range changed: new version ${ newVersion } of module ${ dep } no longer matches range ${ publishedRange }, upgraded to ${ updatedRange }`);
     }
   }
 
-  for (const [ dep, newVersion ] of newVersions.entries()) {
-    fixDep(manifest.dependencies || {}, dep.checkedName.name, newVersion);
-    fixDep(manifest.devDependencies || {}, dep.checkedName.name, newVersion);
+  for (const [ dep, bump ] of newVersions.entries()) {
+    fixDep(manifest, "dependencies", dep.checkedName.name, bump.newVersion);
+    fixDep(manifest, "devDependencies", dep.checkedName.name, bump.newVersion);
   }
 
   getManifestManager().writePackageManifest(mod.path, manifest);
+
+  return updates;
 }
 
 
@@ -200,26 +353,27 @@ async function getPublishedPackageMetaInfo(packageName: string, version: string)
 }
 
 
-async function pushChanges(dir: string, dryRun: boolean) {
+async function pushTag(dir: string, tag: string, dryRun: boolean) {
   const TRY_COUNT = 5;
 
   const args = [ "push", "origin", "--follow-tags" ];
-
   if (dryRun) {
-    console.log("->", ...args);
-  } else {
-    for (let q = 0; q < TRY_COUNT; ++q) {
-      try {
-        await runCommand("git", args, {
-          cwd: dir
-        });
-        return;
-      } catch (error) {
-        console.log(`Failed to push: ${ error.message }, repeating command in 1s...`);
-        await timeout(1000);
-      }
+    args.push("--dry-run");
+  }
+
+  for (let q = 0; q < TRY_COUNT; ++q) {
+    try {
+      await runCommand("git", args, {
+        cwd: dir
+      });
+      return;
+    } catch (error) {
+      console.log(`Failed to push: ${ error.message }, repeating command in 1s...`);
+      await timeout(1000);
     }
   }
+
+  throw new Error(`Failed to execute command after ${ TRY_COUNT } attempts`);
 }
 
 
@@ -235,8 +389,9 @@ async function getPublishTag(packageName: string, newVersion: string): Promise<s
   }
 
   // never set latest for prerelease
-  if (semver.prerelease(newVersion)) {
-    return RECENT_TAG;
+  const prereleases = semver.prerelease(newVersion);
+  if (prereleases != null && prereleases.length > 0) {
+    return prereleases[0];
   }
 
   // set latest only if new version if greater than every other published version
