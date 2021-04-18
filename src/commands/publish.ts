@@ -13,6 +13,8 @@ import * as path from "path";
 import * as fs from "fs-extra";
 import * as _ from "lodash";
 import gitSemverTags from "git-semver-tags";
+
+
 const conventionalRecommendedBump = require("../recommended-bump");
 import { timeout } from "../utils";
 import { Commit } from "conventional-commits-parser";
@@ -42,14 +44,14 @@ async function getSemverTags(dir: string) {
 
 async function getCurrentVersionFromTags(dir: string): Promise<string> {
   const semverTags = (await getSemverTags(dir))
-    .map(tag => tag.startsWith("v") ? tag.slice(1) : tag)
-    .sort((a, b) => {
-      if (semver.eq(a, b)) {
-        return 0;
-      } else {
-        return semver.gt(a, b) ? -1 : 1;
-      }
-    });
+  .map(tag => tag.startsWith("v") ? tag.slice(1) : tag)
+  .sort((a, b) => {
+    if (semver.eq(a, b)) {
+      return 0;
+    } else {
+      return semver.gt(a, b) ? -1 : 1;
+    }
+  });
 
   let currentVersion = semverTags[0];
 
@@ -83,8 +85,8 @@ async function getVersionAfterBump(dir: string, currentVersion: string, prerelea
         return {
           level,
           reason: breakings === 1
-            ? `There is ${ breakings } BREAKING CHANGE and ${ features } features`
-            : `There are ${ breakings } BREAKING CHANGES and ${ features } features`,
+              ? `There is ${ breakings } BREAKING CHANGE and ${ features } features`
+              : `There are ${ breakings } BREAKING CHANGES and ${ features } features`,
           commitCount: commits.length
         };
       }
@@ -104,19 +106,19 @@ async function getVersionAfterBump(dir: string, currentVersion: string, prerelea
         localUpdates
       ];
     } else {
-      const curIds = (semver.prerelease(currentVersion) ?? []).filter(x => typeof x === "string");
-      const wantedIds = prerelease != null ? [ prerelease ] : [];
-      if (!_.isEqual(curIds, wantedIds)) {
-        return [
-          bumpVersion(currentVersion, "patch", prerelease),
-          [ `prerelease ids differ: current are ${ curIds.join(", ") || "<none>" }, requested are ${ wantedIds.join(", ") || "<none>" }` ]
-        ];
-      } else {
-        return [
-          currentVersion,
-          [ "no reason found to change package version" ]
-        ];
-      }
+      // const curIds = (semver.prerelease(currentVersion) ?? []).filter(x => typeof x === "string");
+      // const wantedIds = prerelease != null ? [ prerelease ] : [];
+      // if (!_.isEqual(curIds, wantedIds)) {
+      //   return [
+      //     bumpVersion(currentVersion, "patch", prerelease),
+      //     [ `prerelease ids differ: current are ${ curIds.join(", ") || "<none>" }, requested are ${ wantedIds.join(", ") || "<none>" }` ]
+      //   ];
+      // } else {
+      return [
+        currentVersion,
+        [ "no reason found to change package version" ]
+      ];
+      // }
     }
   } else {
     return [
@@ -221,8 +223,8 @@ export async function publishCommand(): Promise<void> {
 
     if (!localUpdates && shouldPublishIfSourceNotChanged(mod)) {
       localUpdates = getDirectModuleDeps(mod, true)
-        .filter(dep => dirtyModules.includes(dep.mod))
-        .map(dep => `should be published if dependencies change, and module ${ dep.mod.checkedName.name } has changed`);
+      .filter(dep => dirtyModules.includes(dep.mod))
+      .map(dep => `should be published if dependencies change, and module ${ dep.mod.checkedName.name } has changed`);
     }
 
     const bumpInfo = await setNewVersion(mod, currentVersion, args.prerelease, localUpdates);
