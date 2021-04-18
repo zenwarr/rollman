@@ -13,7 +13,7 @@ import * as path from "path";
 import * as fs from "fs-extra";
 import * as _ from "lodash";
 import gitSemverTags from "git-semver-tags";
-import conventionalRecommendedBump from "../recommended-bump";
+const conventionalRecommendedBump = require("../recommended-bump");
 import { timeout } from "../utils";
 import { Commit } from "conventional-commits-parser";
 import assert from "assert";

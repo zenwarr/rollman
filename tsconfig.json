@@ -11,8 +11,7 @@
     "noImplicitThis": true,
     "strict": true,
     "declaration": true,
-    "declarationDir": "declarations",
-    "allowJs": true
+    "declarationDir": "declarations"
   },
   "exclude": [
     "declarations/**/*.*"
