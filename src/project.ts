@@ -9,9 +9,7 @@ import { isFileChangedSincePrefixedTag } from "./git";
 
 
 export interface ProjectOptions {
-  useLockFiles: boolean;
   alwaysUpdateLockFile: boolean;
-  useGitTags: boolean;
   publishIfSourceNotChanged: boolean;
 }
 
@@ -59,16 +57,6 @@ export class Project {
       }
     }
 
-    let useLockFiles = manifest.rollman?.useLockFiles ?? false;
-    if (typeof useLockFiles !== "boolean") {
-      throw new Error(`rollman.useLockFiles should be a boolean in ${ projectDir }/package.json`);
-    }
-
-    let useGitTags = manifest.rollman?.useGitTags ?? true;
-    if (typeof useGitTags !== "boolean") {
-      throw new Error(`rollman.useGitTags should be a boolean in ${ projectDir }/package.json`);
-    }
-
     let alwaysUpdateLockFile = manifest.rollman?.alwaysUpdateLockFile ?? false;
     if (typeof alwaysUpdateLockFile !== "boolean") {
       throw new Error(`rollman.alwaysUpdateLockFile should be a boolean in ${ projectDir }/package.json`);
@@ -81,8 +69,6 @@ export class Project {
 
     let modules = [ ...packagePaths.values() ].map(packagePath => LocalModule.createFromPackage(packagePath));
     return new Project(projectDir, modules, {
-      useLockFiles,
-      useGitTags,
       alwaysUpdateLockFile,
       publishIfSourceNotChanged: publishIfSourceNotChanged ?? DEFAULT_PUBLISH_IF_SOURCE_NOT_CHANGED
     });

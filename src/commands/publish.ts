@@ -195,7 +195,7 @@ export async function publishCommand(): Promise<void> {
     const currentVersion = await getCurrentVersionFromTags(mod.path, args.prerelease);
     let localUpdates: string[] = await updateManifestDeps(mod, currentVersion, moduleVersions);
 
-    if (project.options.useLockFiles && (mod.alwaysUpdateLockFile || shouldUpdateLockfileForModule(mod, args.lockfileCheckProperty))) {
+    if (mod.alwaysUpdateLockFile || shouldUpdateLockfileForModule(mod, args.lockfileCheckProperty)) {
       await generateLockFile(mod.path, localModulesMeta);
 
       if (args.lockfileCopyPath) {
