@@ -11,8 +11,6 @@ export type Arguments = {
 } | {
   subCommand: "dependency-tree";
 } | {
-  subCommand: "release";
-} | {
   subCommand: "each";
   changedOnly: boolean;
   notPublishedOnly: boolean;
@@ -54,7 +52,6 @@ export class ArgumentsManager {
 
     subparsers.add_parser("list", { help: "List all local modules" });
     subparsers.add_parser("tree", { help: "Show local modules dependency tree" });
-    subparsers.add_parser("release", { help: "Release modules" });
 
     const eachParser = subparsers.add_parser("each", { help: "Execute yarn with given parameters in each module" });
     eachParser.add_argument("--changed", {

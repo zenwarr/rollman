@@ -132,7 +132,7 @@
   dependencies:
     "@types/node" "*"
 
-"@types/git-raw-commits@*":
+"@types/git-raw-commits@*", "@types/git-raw-commits@^2.0.0":
   version "2.0.0"
   resolved "https://registry.npmjs.org/@types/git-raw-commits/-/git-raw-commits-2.0.0.tgz#157e9e4709db0748fb1aa623f8927ddd4864bac6"
   integrity sha512-sHXOKjKqu1kQxbxkZiz2s0yx2kc7g20g6tE98LYGq5jQyT9r+GRyTn19NBfPotOlXhGO6oPvYT3tdnPl8MYYyA==
@@ -1031,7 +1031,7 @@ get-intrinsic@^1.0.0:
     has "^1.0.3"
     has-symbols "^1.0.1"
 
-git-raw-commits@^2.0.8:
+git-raw-commits@^2.0.10, git-raw-commits@^2.0.8:
   version "2.0.10"
   resolved "https://registry.npmjs.org/git-raw-commits/-/git-raw-commits-2.0.10.tgz#e2255ed9563b1c9c3ea6bd05806410290297bbc1"
   integrity sha512-sHhX5lsbG9SOO6yXdlwgEMQ/ljIn7qMpAbJZCGfXX2fq5T8M5SrDnpYk9/4HswTildcIqatsWa91vty6VhWSaQ==

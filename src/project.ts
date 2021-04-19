@@ -5,7 +5,6 @@ import * as glob from "glob";
 import { ServiceLocator } from "./locator";
 import { getArgs } from "./arguments";
 import { getManifestManager } from "./manifest-manager";
-import { DEFAULT_RELEASE_BRANCH, isValidReleaseBranchesParam } from "./release/ensure-branches";
 import { isFileChangedSincePrefixedTag } from "./git";
 
 
@@ -13,7 +12,6 @@ export interface ProjectOptions {
   useLockFiles: boolean;
   alwaysUpdateLockFile: boolean;
   useGitTags: boolean;
-  releaseBranches: string[];
   publishIfSourceNotChanged: boolean;
 }
 
@@ -43,16 +41,6 @@ export class Project {
 
   public getModule(moduleName: string): LocalModule | null {
     return this._modules.find(module => module.name && module.name.name === moduleName) || null;
-  }
-
-
-  public getModuleChecked(moduleName: string): LocalModule {
-    let mod = this.getModule(moduleName);
-    if (!mod) {
-      throw new Error(`Module ${ moduleName } not found`);
-    }
-
-    return mod;
   }
 
 
@@ -86,14 +74,6 @@ export class Project {
       throw new Error(`rollman.alwaysUpdateLockFile should be a boolean in ${ projectDir }/package.json`);
     }
 
-    let releaseBranches = manifest.rollman?.releaseBranches;
-    if (!isValidReleaseBranchesParam(releaseBranches)) {
-      throw new Error(`Invalid "rollman.releaseBranches" param in ${ projectDir }/package.json: should be an array of strings`);
-    }
-    if (!releaseBranches) {
-      releaseBranches = [ DEFAULT_RELEASE_BRANCH ];
-    }
-
     let publishIfSourceNotChanged = manifest.rollman?.publishIfSourceNotChanged;
     if (publishIfSourceNotChanged != null && typeof publishIfSourceNotChanged !== "boolean") {
       throw new Error(`Invalid "rollman.publishIfSourceNotChanged" param in ${ projectDir }/package.json: should be a boolean`);
@@ -104,7 +84,6 @@ export class Project {
       useLockFiles,
       useGitTags,
       alwaysUpdateLockFile,
-      releaseBranches,
       publishIfSourceNotChanged: publishIfSourceNotChanged ?? DEFAULT_PUBLISH_IF_SOURCE_NOT_CHANGED
     });
   }

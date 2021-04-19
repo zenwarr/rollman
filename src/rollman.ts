@@ -3,7 +3,6 @@ import { listModulesCommand } from "./commands/list-modules";
 import { dependencyTreeCommand } from "./commands/dependency-tree";
 import { getArgs } from "./arguments";
 import { Project } from "./project";
-import { releaseCommand } from "./commands/release";
 import { eachCommand } from "./commands/each";
 import { publishCommand } from "./commands/publish";
 
@@ -18,7 +17,6 @@ async function asyncStart(): Promise<void> {
   const COMMANDS: { [name: string]: () => Promise<void> | void } = {
     list: listModulesCommand,
     tree: dependencyTreeCommand,
-    release: releaseCommand,
     each: eachCommand,
     publish: publishCommand
   };

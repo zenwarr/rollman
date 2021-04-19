@@ -66,21 +66,6 @@ export async function runCommand(command: string, args: string[], options?: Comm
 }
 
 
-export async function fork(scriptPath: string, args: string[], options?: child_process.ForkOptions): Promise<void> {
-  const child = child_process.fork(scriptPath, args, options);
-  return new Promise<void>((resolve, reject) => {
-    child.on("close", code => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`Proces exited with code ${ code }`));
-      }
-    });
-    child.on("error", reject);
-  });
-}
-
-
 export async function getCommandOutput(command: string, args: string[], options?: CommandOptions): Promise<string> {
   return runCommand(command, args, {
     stdio: "pipe",

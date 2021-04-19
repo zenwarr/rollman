@@ -1,5 +1,4 @@
 import { getManifestManager } from "./manifest-manager";
-import { isValidReleaseBranchesParam } from "./release/ensure-branches";
 
 
 export interface ModuleNpmName {
@@ -13,7 +12,6 @@ export interface LocalModuleConfig {
   path: string;
   name: ModuleNpmName | undefined;
   useNpm: boolean;
-  releaseBranches?: string[];
   publishIfSourceNotChanged?: boolean;
 }
 
@@ -73,11 +71,6 @@ export class LocalModule {
         useNpm: false
       });
     } else {
-      const releaseBranches = manifest.rollman?.releaseBranches;
-      if (!isValidReleaseBranchesParam(releaseBranches)) {
-        throw new Error(`Invalid "rollman.releaseBranches" param in ${ packagePath }/package.json: should be an array of strings`);
-      }
-
       const publishIfSourceNotChanged = manifest.rollman?.publishIfSourceNotChanged;
       if (publishIfSourceNotChanged != null && typeof publishIfSourceNotChanged !== "boolean") {
         throw new Error(`Invalid "rollman.publishIfSourceNotChanged" param in ${ packagePath }/package.json: should be a boolean`);
@@ -87,7 +80,6 @@ export class LocalModule {
         path: packagePath,
         name: npmNameFromPackageName(manifest.name),
         useNpm: true,
-        releaseBranches,
         publishIfSourceNotChanged
       });
     }

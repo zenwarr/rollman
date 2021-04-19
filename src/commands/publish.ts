@@ -1,6 +1,6 @@
 import { getDirectModuleDeps, walkModules } from "../dependencies";
 import { LocalModule } from "../local-module";
-import { tagHead } from "../git";
+import { getVersionTags, tagHead } from "../git";
 import { getNpmExecutable, runCommand } from "../process";
 import { getProject, ROOT_REPO_RELEASE_TAG_PREFIX, shouldForcePublish } from "../project";
 import { getManifestManager } from "../manifest-manager";
@@ -12,13 +12,12 @@ import { getArgs } from "../arguments";
 import * as path from "path";
 import * as fs from "fs-extra";
 import * as _ from "lodash";
-import gitSemverTags from "git-semver-tags";
-
-
-const conventionalRecommendedBump = require("../recommended-bump");
 import { timeout } from "../utils";
 import { Commit } from "conventional-commits-parser";
 import assert from "assert";
+
+
+const conventionalRecommendedBump = require("../recommended-bump");
 
 
 function shouldPublishIfSourceNotChanged(mod: LocalModule): boolean {
@@ -27,37 +26,23 @@ function shouldPublishIfSourceNotChanged(mod: LocalModule): boolean {
 }
 
 
-async function getSemverTags(dir: string) {
-  return new Promise<string[]>((resolve, reject) => {
-    gitSemverTags({
-      cwd: dir
-    } as any, (err, result) => {
-      if (err != null) {
-        reject(err);
-      } else {
-        resolve(result);
-      }
-    });
-  });
-}
-
-
 async function getCurrentVersionFromTags(dir: string): Promise<string> {
-  const semverTags = (await getSemverTags(dir))
-  .map(tag => tag.startsWith("v") ? tag.slice(1) : tag)
-  .sort((a, b) => {
-    if (semver.eq(a, b)) {
-      return 0;
-    } else {
-      return semver.gt(a, b) ? -1 : 1;
-    }
-  });
+  const versionTags = (await getVersionTags(dir))
+      .sort((a, b) => {
+        if (semver.eq(a.version, b.version)) {
+          return 0;
+        } else {
+          return semver.gt(a.version, b.version) ? -1 : 1;
+        }
+      });
 
-  let currentVersion = semverTags[0];
+  let currentVersion = versionTags[0];
 
-  assert(currentVersion != null);
-
-  return currentVersion;
+  if (!currentVersion) {
+    return getManifestManager().readPackageManifest(dir).version;
+  } else {
+    return currentVersion.version;
+  }
 }
 
 
@@ -332,25 +317,6 @@ async function updateManifestDeps(mod: LocalModule, currentVersion: string, newV
   getManifestManager().writePackageManifest(mod.path, manifest);
 
   return updates;
-}
-
-
-function getCurrentPackageVersion(dir: string) {
-  const manifest = getManifestManager().readPackageManifest(dir);
-  return manifest.version;
-}
-
-
-async function getPublishedPackageMetaInfo(packageName: string, version: string): Promise<MetaInfo> {
-  const publishedInfo = await getPublishedPackageInfo(`${ packageName }@${ version }`);
-  if (!publishedInfo) {
-    throw new Error(`Failed to get meta info for package that is expected to be published: ${ packageName }@${ version }`);
-  }
-
-  return {
-    integrity: publishedInfo.integrity,
-    resolved: publishedInfo.tarball
-  };
 }
 
 
