@@ -22,6 +22,8 @@ export type Arguments = {
   prerelease?: string;
   dryRun: boolean;
   lockfileCheckProperty?: string;
+  noPushTags: boolean;
+  noPublish: boolean;
 });
 
 
@@ -95,6 +97,18 @@ export class ArgumentsManager {
     publishParser.add_argument("--lockfile-check-prop", {
       help: "Set property to act like `alwaysUpdateLockFile` in package manifest",
       dest: "lockfileCheckProperty"
+    });
+    publishParser.add_argument("--no-push-tags", {
+      help: "Skip tag push step",
+      action: "store_true",
+      dest: "noPushTags",
+      default: false
+    });
+    publishParser.add_argument("--no-publish", {
+      help: "Skip publishing to npm registry step",
+      action: "store_true",
+      dest: "noPublish",
+      default: false
     });
 
     let args: Arguments = argparser.parse_args();

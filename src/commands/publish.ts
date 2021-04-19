@@ -1,12 +1,12 @@
 import { getDirectModuleDeps, walkModules } from "../dependencies";
 import { LocalModule } from "../local-module";
 import { getVersionTags, tagHead } from "../git";
-import { runCommand } from "../process";
-import { getProject, shouldForcePublish } from "../project";
+import { getNpmExecutable, runCommand } from "../process";
+import { getProject, ROOT_REPO_RELEASE_TAG_PREFIX, shouldForcePublish } from "../project";
 import { getManifestManager } from "../manifest-manager";
 import { generateLockFile } from "lockfile-generator";
 import { MetaInfo } from "lockfile-generator/declarations/lib/MetaInfoResolver";
-import { getPublishedPackageInfo} from "../registry";
+import { getPublishedPackageInfo, isVersionPublished } from "../registry";
 import * as semver from "semver";
 import { getArgs } from "../arguments";
 import * as path from "path";
@@ -227,53 +227,57 @@ export async function publishCommand(): Promise<void> {
     }
   });
 
-  // console.log("Pushing tags...");
-  //
-  // let pushedCount = 0;
-  // for (const [ mod, bump ] of moduleVersions.entries()) {
-  //   if (bump.versionTag) {
-  //     await pushTag(mod.path, bump.versionTag, args.dryRun);
-  //     ++pushedCount;
-  //   }
-  // }
-  //
-  // if (!pushedCount) {
-  //   console.log("There are no tags to push");
-  // }
-  //
-  // console.log("Publishing modules...");
-  //
-  // let publishedCount = 0;
-  // for (const mod of dirtyModules) {
-  //   const currentVersion = moduleVersions.get(mod)!.newVersion;
-  //   if (await isVersionPublished(mod.checkedName.name, currentVersion)) {
-  //     continue;
-  //   }
-  //
-  //   const publishTag = await getPublishTag(mod.checkedName.name, moduleVersions.get(mod)!.newVersion);
-  //   let publishArgs = [ "publish", mod.path, "--tag", publishTag ];
-  //   if (args.dryRun) {
-  //     publishArgs.push("--dry-run");
-  //   }
-  //
-  //   await runCommand(getNpmExecutable(), publishArgs, {
-  //     cwd: project.rootDir
-  //   });
-  //
-  //   ++publishedCount;
-  // }
-  //
-  // if (!publishedCount) {
-  //   console.log("There are no modules to publish");
-  // }
-  //
-  // if (lockfileChanged) {
-  //   console.log("Publishing changed lockfile...");
-  //
-  //   const rootReleaseTag = ROOT_REPO_RELEASE_TAG_PREFIX + new Date().valueOf();
-  //   await tagHead(project.rootDir, rootReleaseTag);
-  //   await pushTag(project.rootDir, rootReleaseTag, args.dryRun);
-  // }
+  if (!args.noPushTags) {
+    console.log("Pushing tags...");
+
+    let pushedCount = 0;
+    for (const [ mod, bump ] of moduleVersions.entries()) {
+      if (bump.versionTag) {
+        await pushTag(mod.path, bump.versionTag, args.dryRun);
+        ++pushedCount;
+      }
+    }
+
+    if (!pushedCount) {
+      console.log("There are no tags to push");
+    }
+  }
+
+  if (!args.noPublish) {
+    console.log("Publishing modules...");
+
+    let publishedCount = 0;
+    for (const mod of dirtyModules) {
+      const currentVersion = moduleVersions.get(mod)!.newVersion;
+      if (await isVersionPublished(mod.checkedName.name, currentVersion)) {
+        continue;
+      }
+
+      const publishTag = await getPublishTag(mod.checkedName.name, moduleVersions.get(mod)!.newVersion);
+      let publishArgs = [ "publish", mod.path, "--tag", publishTag ];
+      if (args.dryRun) {
+        publishArgs.push("--dry-run");
+      }
+
+      await runCommand(getNpmExecutable(), publishArgs, {
+        cwd: project.rootDir
+      });
+
+      ++publishedCount;
+    }
+
+    if (!publishedCount) {
+      console.log("There are no modules to publish");
+    }
+  }
+
+  if (!args.noPushTags && lockfileChanged) {
+    console.log("Publishing changed lockfile...");
+
+    const rootReleaseTag = ROOT_REPO_RELEASE_TAG_PREFIX + new Date().valueOf();
+    await tagHead(project.rootDir, rootReleaseTag);
+    await pushTag(project.rootDir, rootReleaseTag, args.dryRun);
+  }
 }
 
 
