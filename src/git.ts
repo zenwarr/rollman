@@ -38,7 +38,7 @@ export async function getCommitsSinceLastPublishedVersion(mod: LocalModule): Pro
   const publishInfo = await getPublishedPackageInfo(mod.checkedName.name);
 
   const versionTags = await getVersionTags(mod.path);
-  const publishedVersionTag = versionTags.find(tag => publishInfo && publishInfo.versions.includes(tag.version))
+  const publishedVersionTag = versionTags.find(tag => publishInfo && publishInfo.versions.includes(tag.version));
 
   return getRawCommits(mod.path, publishedVersionTag?.tag);
 }
@@ -141,16 +141,16 @@ export interface TagInfo {
 export async function listTags(dir: string): Promise<TagInfo[]> {
   try {
     return (await getCommandOutput("git", [ "show-ref", "--tags", "--dereference" ], { cwd: dir }))
-    .split("\n")
-    .filter(line => line.endsWith("^{}") && line)
-    .map(line => {
-      const spaceIndex = line.indexOf(" ");
-      return {
-        hash: line.slice(0, spaceIndex),
-        name: line.slice(spaceIndex + 1 + "refs/tags/".length, -"^{}".length)
-      };
-    })
-    .reverse();
+      .split("\n")
+      .filter(line => line.endsWith("^{}") && line)
+      .map(line => {
+        const spaceIndex = line.indexOf(" ");
+        return {
+          hash: line.slice(0, spaceIndex),
+          name: line.slice(spaceIndex + 1 + "refs/tags/".length, -"^{}".length)
+        };
+      })
+      .reverse();
   } catch (error) {
     if (error.exitCode === 1) {
       // show-ref returns 1 exit code if nothing matches the request https://linux.die.net/man/1/git-show-ref
@@ -176,7 +176,7 @@ export async function isFileChangedSincePrefixedTag(filePath: string, tagPrefix:
 
 export interface VersionTag {
   tag: string;
-  version: string
+  version: string;
 }
 
 

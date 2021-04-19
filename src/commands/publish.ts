@@ -28,13 +28,13 @@ function shouldPublishIfSourceNotChanged(mod: LocalModule): boolean {
 
 async function getCurrentVersionFromTags(dir: string): Promise<string> {
   const versionTags = (await getVersionTags(dir))
-      .sort((a, b) => {
-        if (semver.eq(a.version, b.version)) {
-          return 0;
-        } else {
-          return semver.gt(a.version, b.version) ? -1 : 1;
-        }
-      });
+    .sort((a, b) => {
+      if (semver.eq(a.version, b.version)) {
+        return 0;
+      } else {
+        return semver.gt(a.version, b.version) ? -1 : 1;
+      }
+    });
 
   let currentVersion = versionTags[0];
 
@@ -70,8 +70,8 @@ async function getVersionAfterBump(dir: string, currentVersion: string, prerelea
         return {
           level,
           reason: breakings === 1
-              ? `There is ${ breakings } BREAKING CHANGE and ${ features } features`
-              : `There are ${ breakings } BREAKING CHANGES and ${ features } features`,
+            ? `There is ${ breakings } BREAKING CHANGE and ${ features } features`
+            : `There are ${ breakings } BREAKING CHANGES and ${ features } features`,
           commitCount: commits.length
         };
       }
@@ -79,7 +79,7 @@ async function getVersionAfterBump(dir: string, currentVersion: string, prerelea
       if (err != null) {
         reject(err);
       } else {
-        resolve(result as any);
+        resolve(result);
       }
     });
   });
@@ -208,8 +208,8 @@ export async function publishCommand(): Promise<void> {
 
     if (!localUpdates && shouldPublishIfSourceNotChanged(mod)) {
       localUpdates = getDirectModuleDeps(mod, true)
-      .filter(dep => dirtyModules.includes(dep.mod))
-      .map(dep => `should be published if dependencies change, and module ${ dep.mod.checkedName.name } has changed`);
+        .filter(dep => dirtyModules.includes(dep.mod))
+        .map(dep => `should be published if dependencies change, and module ${ dep.mod.checkedName.name } has changed`);
     }
 
     const bumpInfo = await setNewVersion(mod, currentVersion, args.prerelease, localUpdates);
