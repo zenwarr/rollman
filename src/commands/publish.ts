@@ -1,12 +1,12 @@
 import { getDirectModuleDeps, walkModules } from "../dependencies";
 import { LocalModule } from "../local-module";
 import { getVersionTags, tagHead } from "../git";
-import { getNpmExecutable, runCommand } from "../process";
-import { getProject, ROOT_REPO_RELEASE_TAG_PREFIX, shouldForcePublish } from "../project";
+import { runCommand } from "../process";
+import { getProject, shouldForcePublish } from "../project";
 import { getManifestManager } from "../manifest-manager";
 import { generateLockFile } from "lockfile-generator";
 import { MetaInfo } from "lockfile-generator/declarations/lib/MetaInfoResolver";
-import { getPublishedPackageInfo, isVersionPublished } from "../registry";
+import { getPublishedPackageInfo} from "../registry";
 import * as semver from "semver";
 import { getArgs } from "../arguments";
 import * as path from "path";
