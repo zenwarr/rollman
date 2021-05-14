@@ -247,7 +247,7 @@ export async function publishCommand(): Promise<void> {
     console.log("Publishing modules...");
 
     let publishedCount = 0;
-    for (const mod of dirtyModules) {
+    for (const mod of project.modules) {
       const currentVersion = moduleVersions.get(mod)!.newVersion;
       if (await isVersionPublished(mod.checkedName.name, currentVersion)) {
         continue;
