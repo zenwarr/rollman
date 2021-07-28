@@ -60,7 +60,7 @@ export function getDirectPackageDeps(mod: LocalModule, includeDev: boolean): Pac
   }
 
   addDeps(pkg.dependencies, DepType.Production);
-  addDeps(pkg.peerDependencies, DepType.Peer);
+  // addDeps(pkg.peerDependencies, DepType.Peer);
   if (includeDev) {
     addDeps(pkg.devDependencies, DepType.Dev);
   }
