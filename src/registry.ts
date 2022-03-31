@@ -1,4 +1,4 @@
-import { getCommandOutput, getNpmExecutable} from "./process";
+import { getCommandOutput, getNpmExecutable } from "./process";
 import { getProject } from "./project";
 
 
@@ -26,7 +26,7 @@ export async function getPublishedPackageInfo(packageName: string): Promise<Publ
   if (parsedOutput.error && parsedOutput.error.code === "E404") {
     return undefined;
   } else if (parsedOutput.error) {
-    throw new Error("Failed to get package info: " + parsedOutput.error?.code + " " + parsedOutput.error?.summary);
+    throw new Error(`Failed to get package info (${ packageName }): ${ parsedOutput.error?.code } ${ parsedOutput.error?.summary }`);
   }
 
   return {
